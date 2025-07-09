@@ -59,6 +59,12 @@ void Player::update(float deltaTime) {
         if (vy > MAX_FALL_SPEED) {
             vy = MAX_FALL_SPEED;
         }
+    } else {
+        // 只有当垂直速度向下时才停止垂直移动，这样弹簧平台设置的向上速度就不会被覆盖
+        if (vy > 0) {
+            vy = 0;
+        }
+        // 如果vy < 0（向上运动），保持不变，让玩家可以弹起
     }
 
     // 摩擦力
@@ -68,21 +74,23 @@ void Player::update(float deltaTime) {
     x += vx * deltaTime;
     y += vy * deltaTime;
 
+    // 如果玩家开始向上移动，应该离开地面
+    if (vy < 0) {
+        onGround = false;
+    }
+
     // 更新粒子
     updateParticles(deltaTime);
-
-    // 重置地面状态
-    onGround = false;
 }
 
 void Player::setOnGround(bool grounded) {
     wasOnGround = onGround;
     onGround = grounded;
 
-    if (onGround && !wasOnGround) {
+    if (onGround && !wasOnGround && vy > 0) {  // 添加vy > 0条件，确保是从上方落下
         jumpCount = 0;
         createLandingParticles();
-        addCombo();
+        addCombo();  // 只在真正着陆时增加连击
 
         // 着陆震动
         addScreenShake(2.0f);
@@ -133,6 +141,11 @@ void Player::jump() {
         createJumpParticles();
         addScreenShake(1.5f);
 
+        // 跳跃时重置连击计时器（保持连击）
+        if (comboCount > 0) {
+            comboTimer = 3.0f;  // 重置连击计时器
+        }
+
         // 二段跳的特殊效果
         if (jumpCount > 1) {
             createDoubleJumpParticles();
@@ -154,12 +167,20 @@ void Player::applyShield() {
 }
 
 void Player::addCombo() {
-    comboCount++;
-    comboTimer = 3.0f;  // 3秒内必须继续跳跃才能保持连击
+    // 修复：添加连击间隔检查，避免过快连击
+    static float lastComboTime = 0;
+    float currentTime = pulseTimer;
 
-    // 连击特效
-    if (comboCount > 3) {
-        createComboEffect();
+    // 只有间隔超过0.1秒才能增加连击
+    if (currentTime - lastComboTime > 0.1f) {
+        comboCount++;
+        comboTimer = 3.0f;  // 3秒内必须继续跳跃才能保持连击
+        lastComboTime = currentTime;
+
+        // 连击特效
+        if (comboCount > 3) {
+            createComboEffect();
+        }
     }
 }
 

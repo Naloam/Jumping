@@ -354,9 +354,9 @@ public:
         player.checkBounds(WINDOW_WIDTH, WINDOW_HEIGHT);
 
         // 分数计算
-        float playerRealHeight = -(player.getY() - 400);
-        if (playerRealHeight > maxHeight) {
-            maxHeight = (int)playerRealHeight;
+        float currentHeight = -(player.getY() - 400);
+        if (currentHeight > maxHeight) {
+            maxHeight = (int)currentHeight;
             score = maxHeight / 10;
         }
 
@@ -439,35 +439,71 @@ public:
     }
 
     void checkCollisions() {
-        for (auto& platform : platforms) {
-            if (platform.checkCollision(player.getX(), player.getY(), player.getWidth(), player.getHeight())) {
-                if (player.getY() < platform.getY()) {
-                    // 修复：使用Player的实际垂直速度
-                    float playerVY = player.getVY();
-                    float newY = platform.handleCollision(player.getX(), player.getY(),
-                        player.getWidth(), player.getHeight(),
-                        playerVY);
-                    player.setPosition(player.getX(), newY);
-                    player.setVY(playerVY);  // 设置修改后的垂直速度
-                    player.setOnGround(true);
+        bool foundGroundCollision = false;
 
-                    // 收集道具
-                    Item* item = platform.collectItem();
-                    if (item) {
-                        switch (item->type) {
-                        case SPEED_BOOST:
-                            player.applySpeedBoost();
-                            break;
-                        case SHIELD:
-                            player.applyShield();
-                            break;
-                        default:
-                            break;
-                        }
+        for (auto& platform : platforms) {
+            // 获取玩家和平台的边界
+            float playerLeft = player.getX();
+            float playerRight = player.getX() + player.getWidth();
+            float playerTop = player.getY();
+            float playerBottom = player.getY() + player.getHeight();
+
+            float platformLeft = platform.getX();
+            float platformRight = platform.getX() + platform.getWidth();
+            float platformTop = platform.getY();
+
+            // 检查水平重叠
+            bool horizontalOverlap = (playerRight > platformLeft) && (playerLeft < platformRight);
+
+            // 检查垂直碰撞（玩家从上方接触）
+            bool verticalCollision = (playerBottom >= platformTop) && (playerBottom <= platformTop + 15);
+
+            // 对于弹簧平台，放宽条件确保能够触发
+            if (platform.getType() == SPRING) {
+                verticalCollision = (playerBottom >= platformTop) && (playerBottom <= platformTop + 20);
+            }
+
+            if (horizontalOverlap && verticalCollision) {
+                // 计算碰撞后的位置
+                float newY = platformTop - player.getHeight();
+
+                // 处理平台特殊效果
+                float playerVY = player.getVY();
+                platform.handleCollision(player.getX(), player.getY(),
+                    player.getWidth(), player.getHeight(), playerVY);
+
+                player.setPosition(player.getX(), newY);
+                player.setVY(playerVY);  // 这里会设置弹簧的向上速度
+
+                // 对于弹簧平台，不要立即设置为onGround，让玩家弹起
+                if (platform.getType() == SPRING && playerVY < 0) {
+                    foundGroundCollision = false;  // 弹簧时不在地面
+                }
+                else {
+                    foundGroundCollision = true;
+                }
+
+                // 收集道具
+                Item* item = platform.collectItem();
+                if (item) {
+                    switch (item->type) {
+                    case SPEED_BOOST:
+                        player.applySpeedBoost();
+                        break;
+                    case SHIELD:
+                        player.applyShield();
+                        break;
+                    default:
+                        break;
                     }
                 }
+
+                break;  // 只处理第一个有效碰撞
             }
         }
+
+        // 设置地面状态
+        player.setOnGround(foundGroundCollision);
     }
 
     void resetGame() {

@@ -174,16 +174,31 @@ float Platform::handleCollision(float playerX, float playerY, float playerWidth,
         break;
 
     case SPRING:
-        if (!wasTriggered && playerVY > 0) {  // 从上方落下
+        if (playerVY >= 0) {  // 只要是向下或静止就可以弹起
             triggerSpring();
-            playerVY = -450.0f;  // 超高跳跃
+            playerVY = -500.0f;  // 增强弹簧力度，从-450改为-500
             springCompression = 1.0f;
             wasTriggered = true;
+
+            // 添加弹簧粒子效果
+            createSpringParticles(x + width / 2, y);
         }
         break;
     }
 
     return resultY;
+}
+
+void Platform::createSpringParticles(float centerX, float centerY) {
+    // 这里创建一些向上的粒子来表示弹簧效果
+    // 注意：这个函数目前不会真正创建粒子，因为Platform类没有粒子系统
+    // 但我们可以通过视觉效果来表示弹簧激活
+
+    // 触发弹簧压缩动画
+    springCompression = 1.0f;
+
+    // 增加动画计时器来创建视觉反馈
+    animationTimer += 0.5f; // 让弹簧动画更明显
 }
 
 void Platform::triggerBreak() {

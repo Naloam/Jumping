@@ -80,6 +80,7 @@ public:
     float handleCollision(float playerX, float playerY, float playerWidth, float playerHeight, float& playerVY);
     void triggerBreak();
     void triggerSpring();
+    void createSpringParticles(float centerX, float centerY);
 
     // Y轴移动方法（用于世界上升）
     void moveY(float deltaY) {
