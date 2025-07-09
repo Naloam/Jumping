@@ -1,0 +1,54 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-jump-game",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-std=c++17",
+                "-g",
+                "${workspaceFolder}/main_minimal.cpp",
+                "${workspaceFolder}/Theme.cpp",
+                "-o",
+                "${workspaceFolder}/JumpGame_Minimal.exe",
+                "-I",
+                "${workspaceFolder}/SimpleGX/include",
+                "-L",
+                "${workspaceFolder}/SimpleGX/lib",
+                "-lSimpleGX",
+                "-lgdi32",
+                "-limm32",
+                "-lmsimg32",
+                "-lole32",
+                "-loleaut32",
+                "-lwinmm",
+                "-luuid"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$gcc",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "run-jump-game",
+            "type": "shell",
+            "command": "${workspaceFolder}/JumpGame.exe",
+            "group": "test",
+            "dependsOn": "build-jump-game",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        }
+    ]
+}
