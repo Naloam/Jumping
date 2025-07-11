@@ -33,6 +33,7 @@ private:
     float speedBoostTimer;
     float shieldTimer;
     bool hasShieldActive;
+    bool shieldUsed; // 标记护盾是否已使用过
 
     // 连击系统
     int comboCount;
@@ -45,6 +46,10 @@ private:
     // 屏幕震动
     float shakeIntensity;
     float shakeTimer;
+
+    // 分数系统
+    int bonusScore;    // 道具加分
+    int itemsCollected; // 收集的道具数量
 
     // 物理常量
     static const float GRAVITY;
@@ -85,12 +90,19 @@ public:
     // 道具效果
     void applySpeedBoost();
     void applyShield();
+	void consumeShield(); 
     bool canTakeDamage() const { return !hasShieldActive; }
 
     // 连击系统
     int getComboCount() const { return comboCount; }
     void addCombo();
     void resetCombo();
+
+    // 新增：分数系统
+    void addBonusScore(int points);
+    int getBonusScore() const { return bonusScore; }
+    int getItemsCollected() const { return itemsCollected; }
+    void incrementItemsCollected() { itemsCollected++; }
 
     // 粒子效果
     void createJumpParticles();
@@ -100,6 +112,7 @@ public:
     void createSpeedBoostEffect();           // 新增
     void createShieldActivateEffect();       // 新增
     void createComboEffect();                // 新增
+    void createRespawnEffect() { createShieldActivateEffect(); }
     void updateParticles(float deltaTime);
     void drawParticles(float offsetX, float offsetY);
 

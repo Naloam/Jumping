@@ -6,11 +6,11 @@
 #include <cstdlib>
 
 // 静态常量定义
-const float Player::GRAVITY = 500.0f;
-const float Player::JUMP_SPEED = -300.0f;
-const float Player::MOVE_SPEED = 200.0f;
+const float Player::GRAVITY = 600.0f;
+const float Player::JUMP_SPEED = -400.0f;
+const float Player::MOVE_SPEED = 300.0f;
 const float Player::FRICTION = 0.8f;
-const float Player::MAX_FALL_SPEED = 400.0f;
+const float Player::MAX_FALL_SPEED = 500.0f;
 
 Player::Player(float x, float y)
     : x(x), y(y), vx(0), vy(0), width(30), height(30),
@@ -18,7 +18,8 @@ Player::Player(float x, float y)
     currentColor(Theme::PLAYER_MAIN), pulseTimer(0.0f),
     speedBoostTimer(0.0f), shieldTimer(0.0f), hasShieldActive(false),
     comboCount(0), comboTimer(0.0f), lastLandingTime(0.0f),
-    shakeIntensity(0.0f), shakeTimer(0.0f) {
+    shakeIntensity(0.0f), shakeTimer(0.0f),
+    bonusScore(0), itemsCollected(0) {
 }
 
 void Player::update(float deltaTime) {
@@ -157,13 +158,40 @@ void Player::applySpeedBoost() {
     speedBoostTimer = 5.0f;  // 5秒加速效果
     // 添加特效爆发
     createSpeedBoostEffect();
+
+    // 新增：道具加分
+    addBonusScore(50);  // 速度提升道具+50分
+    incrementItemsCollected();
 }
 
 void Player::applyShield() {
     hasShieldActive = true;
     shieldTimer = 10.0f;  // 10秒护盾效果
+    shieldUsed = false;   // 重置使用标记
     // 添加护盾激活特效
     createShieldActivateEffect();
+
+    // 新增：道具加分
+    addBonusScore(100); // 护盾道具+100分
+    incrementItemsCollected();
+}
+
+// 新增：添加奖励分数
+void Player::addBonusScore(int points) {
+    bonusScore += points;
+
+    // 根据连击倍数增加额外分数
+    if (comboCount > 1) {
+        int comboBonus = points * (comboCount - 1) / 2; // 连击奖励递减
+        bonusScore += comboBonus;
+    }
+}
+
+// 新增：消耗护盾（用于复活）
+void Player::consumeShield() {
+    hasShieldActive = false;
+    shieldTimer = 0.0f;
+    shieldUsed = true;
 }
 
 void Player::addCombo() {
@@ -478,9 +506,14 @@ void Player::reset() {
     speedBoostTimer = 0.0f;
     shieldTimer = 0.0f;
     hasShieldActive = false;
+    shieldUsed = false; // 重置护盾使用标记
 
     // 重置连击
     resetCombo();
+
+    // 重置分数系统
+    bonusScore = 0;
+    itemsCollected = 0;
 
     // 清除粒子
     particles.clear();

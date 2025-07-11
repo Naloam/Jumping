@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.rh": "cpp",
+			"cmath": "cpp",
+			"unordered_map": "cpp",
+			"string": "cpp",
+			"iostream": "cpp",
+			"chrono": "cpp",
+			"random": "cpp",
+			"limits": "cpp"
+		}
+	}
+}

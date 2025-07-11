@@ -178,8 +178,9 @@ private:
     GameState currentState;
     Player player;
     vector<Platform> platforms;
-    int score;
-    int maxHeight;
+    long long score;
+    long long maxHeight;
+    float initialPlayerY;   // 记录初始Y位置
     float camera_y;
 
     // 新增系统
@@ -193,6 +194,8 @@ private:
     float cameraTargetY;
     float cameraSpeed;
     float cameraDeadZone;
+    float maxCameraSpeed; 
+    float cameraSpeedLimit;
 
     // 游戏状态相关
     float worldSpeed;
@@ -211,14 +214,31 @@ private:
     float highestPlatformY;
     float platformSpawnThreshold;
 
+    // 最后接触的平台信息（用于复活）
+    struct LastPlatformInfo {
+        float x, y;
+        float width, height;
+        bool isValid;
+
+        LastPlatformInfo() : x(0), y(0), width(100), height(20), isValid(false) {}
+    } lastSafePlatform;
+
 public:
     Game() : currentState(MENU), player(100, 400), score(0), maxHeight(0), camera_y(0), fadeAlpha(0),
         cameraTargetY(0), cameraSpeed(3.0f), cameraDeadZone(80.0f),
-        worldSpeed(0), baseWorldSpeed(50.0f), gameTime(0),
+        maxCameraSpeed(4.5f), cameraSpeedLimit(6.0f), 
+        worldSpeed(0), baseWorldSpeed(20.0f), gameTime(0),
         spaceWasPressed(false), escWasPressed(false),
-        highestPlatformY(0), platformSpawnThreshold(300.0f) {
+        highestPlatformY(0), platformSpawnThreshold(30.0f) {
         srand((unsigned int)time(nullptr));
         initializePlatforms();
+
+        // 确保玩家出生在起始平台上
+        positionPlayerOnStartPlatform();
+
+        // 记录初始Y位置
+        initialPlayerY = player.getY();
+
         killZone = player.getY() + 300.0f;
     }
 
@@ -227,6 +247,11 @@ public:
 
         // 地面平台
         platforms.push_back(Platform(0, WINDOW_HEIGHT - 40, WINDOW_WIDTH, 40, NORMAL));
+
+        // 添加一个固定的起始平台，确保玩家有地方站立
+        float startPlatformY = WINDOW_HEIGHT - 120;
+        float startPlatformX = WINDOW_WIDTH / 2 - 75; // 居中位置
+        platforms.push_back(Platform(startPlatformX, startPlatformY, 150, 20, NORMAL));
 
         // 随机生成初始平台
         float currentY = WINDOW_HEIGHT - 100;
@@ -240,6 +265,26 @@ public:
             if (currentY < highestPlatformY) {
                 highestPlatformY = currentY;
             }
+        }
+    }
+
+    // 将玩家定位到起始平台上
+    void positionPlayerOnStartPlatform() {
+        // 找到起始平台（第二个平台，因为第一个是地面）
+        if (platforms.size() >= 2) {
+            const Platform& startPlatform = platforms[1];
+            float platformCenterX = startPlatform.getX() + startPlatform.getWidth() / 2;
+            float platformTop = startPlatform.getY() - player.getHeight();
+
+            player.setPosition(platformCenterX - player.getWidth() / 2, platformTop);
+            player.setOnGround(true);
+
+            // 记录为安全平台
+            lastSafePlatform.x = startPlatform.getX();
+            lastSafePlatform.y = startPlatform.getY();
+            lastSafePlatform.width = startPlatform.getWidth();
+            lastSafePlatform.height = startPlatform.getHeight();
+            lastSafePlatform.isValid = true;
         }
     }
 
@@ -321,7 +366,35 @@ public:
 
         if (playerScreenY < screenCenterY - cameraDeadZone) {
             cameraTargetY = player.getY() - screenCenterY;
-            camera_y += (cameraTargetY - camera_y) * cameraSpeed * deltaTime;
+
+            // 计算当前高度
+            float currentHeight = initialPlayerY - player.getY();
+
+            // 动态计算相机速度限制
+            float speedMultiplier = 1.0f;
+
+            if (currentHeight > cameraSpeedLimit) {
+                // 渐进式速度限制：高度越高，速度限制越严格
+                float heightExcess = currentHeight - cameraSpeedLimit;
+                float limitStrength = std::min(1.0f, heightExcess / 20.0f); // 200像素内完全过渡
+
+                // 在正常速度和最大限制速度之间插值
+                float normalMovement = (cameraTargetY - camera_y) * cameraSpeed * deltaTime;
+                float limitedMovement = maxCameraSpeed * deltaTime;
+
+                if (abs(normalMovement) > limitedMovement) {
+                    float blendedMovement = normalMovement * (1.0f - limitStrength) +
+                        (normalMovement > 0 ? limitedMovement : -limitedMovement) * limitStrength;
+                    camera_y += blendedMovement;
+                }
+                else {
+                    camera_y += normalMovement;
+                }
+            }
+            else {
+                // 高度较低时使用正常速度
+                camera_y += (cameraTargetY - camera_y) * cameraSpeed * deltaTime;
+            }
         }
 
         if (camera_y < 0) camera_y = 0;
@@ -354,11 +427,7 @@ public:
         player.checkBounds(WINDOW_WIDTH, WINDOW_HEIGHT);
 
         // 分数计算
-        float currentHeight = -(player.getY() - 400);
-        if (currentHeight > maxHeight) {
-            maxHeight = (int)currentHeight;
-            score = maxHeight / 10;
-        }
+        updateScore();
 
         // 暂停检查
         static bool escReleased = true;
@@ -376,9 +445,52 @@ public:
                 currentState = GAME_OVER;
             }
             else {
-                // 护盾保护，传送到安全位置
-                player.setPosition(player.getX(), killZone - 100);
+                // 护盾保护：复活到最后接触的安全平台
+                respawnPlayerToSafePlatform();
             }
+        }
+    }
+
+    // 更新分数系统
+    void updateScore() {
+        // 高度分数计算（使用double避免精度损失）
+        double currentHeight = initialPlayerY - player.getY(); // 简化计算
+
+        if (currentHeight > (double)maxHeight) {
+            maxHeight = (long long)currentHeight;
+        }
+
+        // 总分数 = 高度分数 + 道具奖励分数 + 连击奖励
+        long long heightScore = maxHeight / 5;  // 每5像素1分，提高分数增长速度
+        long long bonusScore = player.getBonusScore();
+        long long comboBonus = player.getComboCount() * 10; // 连击额外奖励
+
+        score = heightScore + bonusScore + comboBonus;
+    }
+
+    // 护盾复活逻辑
+    void respawnPlayerToSafePlatform() {
+        if (lastSafePlatform.isValid) {
+            // 将玩家传送到最后的安全平台上
+            float respawnX = lastSafePlatform.x + lastSafePlatform.width / 2 - player.getWidth() / 2;
+            float respawnY = lastSafePlatform.y - player.getHeight();
+
+            player.setPosition(respawnX, respawnY);
+            player.setVY(0); // 停止下降
+            player.setOnGround(true);
+
+            // 添加复活特效
+            player.createShieldActivateEffect();
+            player.addScreenShake(3.0f);
+
+            // 护盾消耗：复活后失去护盾
+            player.consumeShield();
+            
+        }
+        else {
+            // 如果没有记录的安全平台，传送到起始位置
+            positionPlayerOnStartPlatform();
+            player.consumeShield();
         }
     }
 
@@ -469,15 +581,25 @@ public:
 
                 // 处理平台特殊效果
                 float playerVY = player.getVY();
-                platform.handleCollision(player.getX(), player.getY(),
-                    player.getWidth(), player.getHeight(), playerVY);
+                platform.handleCollision(player.getX(), player.getY(), player.getWidth(), player.getHeight(), playerVY);
 
                 player.setPosition(player.getX(), newY);
-                player.setVY(playerVY);  // 这里会设置弹簧的向上速度
+                player.setVY(playerVY); 
+
+                // 记录最后接触的安全平台（只记录普通平台和弹簧平台）
+                if (platform.getType() == NORMAL || platform.getType() == SPRING) {
+                    lastSafePlatform.x = platform.getX();
+                    lastSafePlatform.y = platform.getY();
+                    lastSafePlatform.width = platform.getWidth();
+                    lastSafePlatform.height = platform.getHeight();
+                    lastSafePlatform.isValid = true;
+                }
 
                 // 对于弹簧平台，不要立即设置为onGround，让玩家弹起
                 if (platform.getType() == SPRING && playerVY < 0) {
                     foundGroundCollision = false;  // 弹簧时不在地面
+                    // 弹簧平台额外加分
+                    player.addBonusScore(25);
                 }
                 else {
                     foundGroundCollision = true;
@@ -514,8 +636,14 @@ public:
         cameraTargetY = 0;
         gameTime = 0;
         worldSpeed = 0;
-        killZone = player.getY() + 300.0f;
+
         initializePlatforms();
+        positionPlayerOnStartPlatform();
+
+        // 重新记录初始位置
+        initialPlayerY = player.getY();
+
+        killZone = player.getY() + 300.0f;
     }
 
     void render() {
@@ -624,13 +752,11 @@ public:
     }
 
     void drawGameUI() {
-        // 完全透明背景 - 只绘制文字，不绘制背景矩形
-
         // 为文字添加描边效果增强可读性
         settextcolor(RGB(0, 0, 0)); // 黑色描边
         settextstyle(22, 0, L"Arial");
 
-        // 绘制文字描边（偏移1像素绘制多次）
+        // 修改显示逻辑，使用long long
         wstring scoreText = L"Score: " + to_wstring(score);
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
@@ -649,6 +775,16 @@ public:
             }
         }
 
+        // 新增：显示道具收集数
+        wstring itemText = L"Items: " + to_wstring(player.getItemsCollected());
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx != 0 || dy != 0) {
+                    outtextxy(30 + dx, 90 + dy, itemText.c_str());
+                }
+            }
+        }
+
         wstring timeText = L"Time: " + to_wstring((int)gameTime) + L"s";
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
@@ -663,6 +799,7 @@ public:
         outtextxy(30, 30, scoreText.c_str());
         outtextxy(30, 60, heightText.c_str());
         outtextxy(30, 90, timeText.c_str());
+        outtextxy(30, 120, timeText.c_str());
 
         // 连击显示（带描边）
         if (player.getComboCount() > 1) {
@@ -821,7 +958,7 @@ public:
         setfillcolor(DrawUtils::blendColor(RGB(0, 0, 0), RGB(255, 255, 255), 0.8f));
         solidrectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        DrawUtils::drawSoftShadowRect(WINDOW_WIDTH / 2 - 150, WINDOW_HEIGHT / 2 - 120, 300, 240, 20, Theme::PRIMARY);
+        DrawUtils::drawSoftShadowRect(WINDOW_WIDTH / 2 - 150, WINDOW_HEIGHT / 2 - 100, 300, 240, 20, Theme::PRIMARY);
 
         settextcolor(WHITE);
         settextstyle(40, 0, L"Arial");
@@ -841,24 +978,30 @@ public:
         wstring finalHeightText = L"Max Height: " + to_wstring(maxHeight);
         int heightWidth = textwidth(finalHeightText.c_str());
         int heightX = (WINDOW_WIDTH - heightWidth) / 2;
-        outtextxy(heightX, WINDOW_HEIGHT / 2 - 10, finalHeightText.c_str());
+        outtextxy(heightX, WINDOW_HEIGHT / 2 - 15, finalHeightText.c_str());
+
+        // 新增：显示道具收集统计
+        wstring itemsText = L"Items Collected: " + to_wstring(player.getItemsCollected());
+        int itemsWidth = textwidth(itemsText.c_str());
+        int itemsX = (WINDOW_WIDTH - itemsWidth) / 2;
+        outtextxy(itemsX, WINDOW_HEIGHT / 2 + 10, itemsText.c_str());
 
         wstring survivalTimeText = L"Survival Time: " + to_wstring((int)gameTime) + L"s";
         int timeWidth = textwidth(survivalTimeText.c_str());
         int timeX = (WINDOW_WIDTH - timeWidth) / 2;
-        outtextxy(timeX, WINDOW_HEIGHT / 2 + 20, survivalTimeText.c_str());
+        outtextxy(timeX, WINDOW_HEIGHT / 2 + 35, survivalTimeText.c_str());
 
         wstring maxComboText = L"Max Combo: " + to_wstring(player.getComboCount()) + L"x";
         int comboWidth = textwidth(maxComboText.c_str());
         int comboX = (WINDOW_WIDTH - comboWidth) / 2;
-        outtextxy(comboX, WINDOW_HEIGHT / 2 + 50, maxComboText.c_str());
+        outtextxy(comboX, WINDOW_HEIGHT / 2 + 60, maxComboText.c_str());
 
-        settextstyle(18, 0, L"Arial");
-        settextcolor(Theme::ACCENT);
+        settextstyle(30, 0, L"Arial");
+        settextcolor(Theme::WARNING);
         wstring restartText = L"SPACE to return to menu";
         int restartWidth = textwidth(restartText.c_str());
         int restartX = (WINDOW_WIDTH - restartWidth) / 2;
-        outtextxy(restartX, WINDOW_HEIGHT / 2 + 80, restartText.c_str());
+        outtextxy(restartX, WINDOW_HEIGHT / 2 + 85, restartText.c_str());
 
         wstring exitText = L"ESC to exit game";
         int exitWidth = textwidth(exitText.c_str());
