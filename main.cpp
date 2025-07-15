@@ -214,6 +214,21 @@ private:
     float highestPlatformY;
     float platformSpawnThreshold;
 
+    // 新增：平滑镜头速度控制
+    float smoothCameraSpeed;
+    float cameraSpeedAcceleration;
+    float maxSafeCameraSpeed;
+
+    // 新增：玩家垂直速度统计
+    std::vector<float> playerVerticalSpeedSamples;
+    float averagePlayerVerticalSpeed;
+    float lastPlayerY;
+    float playerSpeedSampleTime;
+
+    // 新增：世界速度平滑控制
+    float maxWorldSpeed;
+    float worldSpeedSmoothing;
+
     // 最后接触的平台信息（用于复活）
     struct LastPlatformInfo {
         float x, y;
@@ -229,9 +244,29 @@ public:
         maxCameraSpeed(4.5f), cameraSpeedLimit(6.0f), 
         worldSpeed(0), baseWorldSpeed(20.0f), gameTime(0),
         spaceWasPressed(false), escWasPressed(false),
-        highestPlatformY(0), platformSpawnThreshold(30.0f) {
+        highestPlatformY(0), platformSpawnThreshold(30.0f),
+        // 新增：初始化平滑镜头控制
+        smoothCameraSpeed(3.0f),
+        cameraSpeedAcceleration(0.5f),
+        maxSafeCameraSpeed(8.0f), // 安全的最大镜头速度
+
+        // 新增：初始化玩家速度统计
+        averagePlayerVerticalSpeed(0.0f),
+        lastPlayerY(0.0f),
+        playerSpeedSampleTime(0.0f),
+
+        // 新增：初始化世界速度控制
+        maxWorldSpeed(60.0f), // 世界速度上限
+        worldSpeedSmoothing(2.0f) {
         srand((unsigned int)time(nullptr));
-        initializePlatforms();
+        initializePlatforms();{
+            srand((unsigned int)time(nullptr));
+            initializePlatforms();
+            positionPlayerOnStartPlatform();
+            initialPlayerY = player.getY();
+            lastPlayerY = initialPlayerY;
+            killZone = player.getY() + 300.0f;
+        }
 
         // 确保玩家出生在起始平台上
         positionPlayerOnStartPlatform();
@@ -367,37 +402,61 @@ public:
         if (playerScreenY < screenCenterY - cameraDeadZone) {
             cameraTargetY = player.getY() - screenCenterY;
 
-            // 计算当前高度
+            // 计算当前高度和难度
             float currentHeight = initialPlayerY - player.getY();
+            float difficultyFactor = std::min(1.0f, currentHeight / 1000.0f); // 1000像素内达到最大难度
 
-            // 动态计算相机速度限制
-            float speedMultiplier = 1.0f;
+            // 平滑的镜头速度增长
+            float targetCameraSpeed = cameraSpeed + difficultyFactor * cameraSpeedAcceleration;
+            targetCameraSpeed = std::min(targetCameraSpeed, maxSafeCameraSpeed);
 
-            if (currentHeight > cameraSpeedLimit) {
-                // 渐进式速度限制：高度越高，速度限制越严格
-                float heightExcess = currentHeight - cameraSpeedLimit;
-                float limitStrength = std::min(1.0f, heightExcess / 20.0f); // 200像素内完全过渡
+            // 使用指数平滑来过渡镜头速度
+            smoothCameraSpeed = smoothCameraSpeed * 0.98f + targetCameraSpeed * 0.02f;
 
-                // 在正常速度和最大限制速度之间插值
-                float normalMovement = (cameraTargetY - camera_y) * cameraSpeed * deltaTime;
-                float limitedMovement = maxCameraSpeed * deltaTime;
+            // 计算镜头移动量
+            float cameraMovement = (cameraTargetY - camera_y) * smoothCameraSpeed * deltaTime;
 
-                if (abs(normalMovement) > limitedMovement) {
-                    float blendedMovement = normalMovement * (1.0f - limitStrength) +
-                        (normalMovement > 0 ? limitedMovement : -limitedMovement) * limitStrength;
-                    camera_y += blendedMovement;
-                }
-                else {
-                    camera_y += normalMovement;
-                }
+            // 应用最大速度限制
+            float maxMovement = maxSafeCameraSpeed * deltaTime;
+            if (std::abs(cameraMovement) > maxMovement) {
+                cameraMovement = (cameraMovement > 0) ? maxMovement : -maxMovement;
             }
-            else {
-                // 高度较低时使用正常速度
-                camera_y += (cameraTargetY - camera_y) * cameraSpeed * deltaTime;
-            }
+
+            camera_y += cameraMovement;
         }
 
         if (camera_y < 0) camera_y = 0;
+    }
+
+    // 新增：更新玩家垂直速度统计
+    void updatePlayerVerticalSpeedStats(float deltaTime) {
+        playerSpeedSampleTime += deltaTime;
+
+        // 每0.1秒采样一次玩家垂直速度
+        if (playerSpeedSampleTime >= 0.1f) {
+            float currentPlayerY = player.getY();
+            float verticalSpeed = (lastPlayerY - currentPlayerY) / playerSpeedSampleTime; // 向上为正
+
+            // 只记录向上的速度（跳跃时）
+            if (verticalSpeed > 0) {
+                playerVerticalSpeedSamples.push_back(verticalSpeed);
+
+                // 保持最近50个样本
+                if (playerVerticalSpeedSamples.size() > 50) {
+                    playerVerticalSpeedSamples.erase(playerVerticalSpeedSamples.begin());
+                }
+
+                // 计算平均速度
+                float sum = 0;
+                for (float speed : playerVerticalSpeedSamples) {
+                    sum += speed;
+                }
+                averagePlayerVerticalSpeed = sum / playerVerticalSpeedSamples.size();
+            }
+
+            lastPlayerY = currentPlayerY;
+            playerSpeedSampleTime = 0.0f;
+        }
     }
 
     void updateGame(float deltaTime) {
@@ -407,7 +466,7 @@ public:
         updateCamera(deltaTime);
         updateWorldMovement(deltaTime);
 
-        // 更新背景滚动
+        // 更新背景滚动（使用平滑的世界速度）
         background.update(deltaTime, worldSpeed);
 
         // 更新平台预览
@@ -421,7 +480,7 @@ public:
             platform.update(deltaTime);
         }
 
-        // 碰撞检测 - 改进版本
+        // 碰撞检测
         checkCollisions();
 
         player.checkBounds(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -445,7 +504,6 @@ public:
                 currentState = GAME_OVER;
             }
             else {
-                // 护盾保护：复活到最后接触的安全平台
                 respawnPlayerToSafePlatform();
             }
         }
@@ -497,12 +555,33 @@ public:
     void updateWorldMovement(float deltaTime) {
         gameTime += deltaTime;
 
-        float timeSpeedMultiplier = 1.0f + (gameTime / 30.0f) * 0.5f;
-        float scoreSpeedMultiplier = 1.0f + (score / 100.0f) * 0.2f;
+        // 更新玩家垂直速度统计
+        updatePlayerVerticalSpeedStats(deltaTime);
 
-        worldSpeed = baseWorldSpeed * timeSpeedMultiplier * scoreSpeedMultiplier;
+        // 基础速度增长（更温和）
+        float timeSpeedMultiplier = 1.0f + (gameTime / 60.0f) * 0.3f; // 降低时间倍数
+        float scoreSpeedMultiplier = 1.0f + (score / 500.0f) * 0.1f; // 降低分数倍数
+
+        // 计算目标世界速度
+        float targetWorldSpeed = baseWorldSpeed * timeSpeedMultiplier * scoreSpeedMultiplier;
+
+        // 确保世界速度不超过玩家平均垂直速度的80%
+        if (averagePlayerVerticalSpeed > 0) {
+            float maxAllowedWorldSpeed = averagePlayerVerticalSpeed * 0.8f;
+            targetWorldSpeed = std::min(targetWorldSpeed, maxAllowedWorldSpeed);
+        }
+
+        // 应用绝对上限
+        targetWorldSpeed = std::min(targetWorldSpeed, maxWorldSpeed);
+
+        // 使用平滑过渡到目标速度
+        worldSpeed = worldSpeed * (1.0f - worldSpeedSmoothing * deltaTime) +
+            targetWorldSpeed * (worldSpeedSmoothing * deltaTime);
+
+        // 更新死亡区域
         killZone = camera_y + WINDOW_HEIGHT + 100;
 
+        // 移动平台
         for (auto& platform : platforms) {
             platform.moveY(worldSpeed * deltaTime);
         }
@@ -637,12 +716,19 @@ public:
         gameTime = 0;
         worldSpeed = 0;
 
+        // 重置镜头平滑控制
+        smoothCameraSpeed = 3.0f;
+
+        // 重置玩家速度统计
+        playerVerticalSpeedSamples.clear();
+        averagePlayerVerticalSpeed = 0.0f;
+        playerSpeedSampleTime = 0.0f;
+
         initializePlatforms();
         positionPlayerOnStartPlatform();
 
-        // 重新记录初始位置
         initialPlayerY = player.getY();
-
+        lastPlayerY = initialPlayerY;
         killZone = player.getY() + 300.0f;
     }
 
