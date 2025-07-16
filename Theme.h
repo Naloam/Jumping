@@ -64,6 +64,34 @@ namespace Theme {
     const COLORREF ITEM_SHIELD_GLOW = RGB(130, 220, 255); // 护盾道具光晕
     const COLORREF ITEM_SHIELD_PARTICLE = RGB(80, 180, 255); // 护盾道具粒子
 
+    const COLORREF ITEM_DOUBLE_JUMP = RGB(100, 255, 100);      // 二段跳道具 - 绿色
+    const COLORREF ITEM_DOUBLE_JUMP_GLOW = RGB(130, 255, 130); // 二段跳道具光晕
+    const COLORREF ITEM_DOUBLE_JUMP_PARTICLE = RGB(80, 255, 80); // 二段跳道具粒子
+
+    const COLORREF ITEM_SLOW_TIME = RGB(100, 100, 255);        // 时间减缓道具 - 蓝色
+    const COLORREF ITEM_SLOW_TIME_GLOW = RGB(130, 130, 255);   // 时间减缓道具光晕
+    const COLORREF ITEM_SLOW_TIME_PARTICLE = RGB(80, 80, 255); // 时间减缓道具粒子
+
+    const COLORREF ITEM_MAGNETIC_FIELD = RGB(255, 100, 255);   // 磁场道具 - 紫色
+    const COLORREF ITEM_MAGNETIC_FIELD_GLOW = RGB(255, 130, 255); // 磁场道具光晕
+    const COLORREF ITEM_MAGNETIC_FIELD_PARTICLE = RGB(255, 80, 255); // 磁场道具粒子
+
+    const COLORREF ITEM_FREEZE_OBSTACLES = RGB(100, 255, 255); // 冻结障碍物道具 - 青色
+    const COLORREF ITEM_FREEZE_OBSTACLES_GLOW = RGB(130, 255, 255); // 冻结障碍物道具光晕
+    const COLORREF ITEM_FREEZE_OBSTACLES_PARTICLE = RGB(80, 255, 255); // 冻结障碍物道具粒子
+
+    const COLORREF ITEM_HEALTH_BOOST = RGB(255, 100, 100);     // 生命值恢复道具 - 红色
+    const COLORREF ITEM_HEALTH_BOOST_GLOW = RGB(255, 130, 130); // 生命值恢复道具光晕
+    const COLORREF ITEM_HEALTH_BOOST_PARTICLE = RGB(255, 80, 80); // 生命值恢复道具粒子
+
+    const COLORREF ITEM_INVINCIBILITY = RGB(255, 215, 0);      // 无敌道具 - 金色
+    const COLORREF ITEM_INVINCIBILITY_GLOW = RGB(255, 235, 50); // 无敌道具光晕
+    const COLORREF ITEM_INVINCIBILITY_PARTICLE = RGB(255, 200, 0); // 无敌道具粒子
+
+    const COLORREF ITEM_COIN = RGB(255, 223, 0);               // 金币 - 金色
+    const COLORREF ITEM_COIN_GLOW = RGB(255, 240, 50);         // 金币光晕
+    const COLORREF ITEM_COIN_PARTICLE = RGB(255, 215, 0);      // 金币粒子
+
     // 粒子效果颜色
     const COLORREF PARTICLE_JUMP = RGB(134, 167, 189);   // 跳跃粒子 - 浅蓝
     const COLORREF PARTICLE_LAND = RGB(95, 158, 160);    // 着陆粒子 - 青色

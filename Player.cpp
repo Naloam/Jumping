@@ -1,5 +1,6 @@
 #include "Player.h"
 #include "Theme.h"
+#include "AudioManager.h"
 #include <graphics.h>
 #include <windows.h>
 #include <cmath>
@@ -16,14 +17,22 @@ Player::Player(float x, float y)
     : x(x), y(y), vx(0), vy(0), width(30), height(30),
     onGround(false), wasOnGround(false), jumpCount(0), maxJumps(2),
     currentColor(Theme::PLAYER_MAIN), pulseTimer(0.0f),
-    speedBoostTimer(0.0f), shieldTimer(0.0f), hasShieldActive(false),
+    speedBoostTimer(0.0f), shieldTimer(0.0f), hasShieldActive(false), shieldUsed(false),
+    doubleJumpTimer(0.0f), slowTimeTimer(0.0f), magneticFieldTimer(0.0f), freezeObstaclesTimer(0.0f),
+    invincibilityTimer(0.0f), hasInvincibility(false),
+    health(3), maxHealth(3), invulnerabilityTimer(0.0f), coins(0),
+    timeScaleFactor(1.0f), magnetRadius(0.0f), hasDoubleJump(false), obstaclesFrozen(false),
     comboCount(0), comboTimer(0.0f), lastLandingTime(0.0f),
+    lastPlatformY(0.0f), hasValidLastPlatform(false), currentPlatformY(0.0f),  // 新增初始化
     shakeIntensity(0.0f), shakeTimer(0.0f),
     bonusScore(0), itemsCollected(0) {
 }
 
 void Player::update(float deltaTime) {
-    pulseTimer += deltaTime;
+    // 应用时间缩放
+    float effectiveDeltaTime = deltaTime * timeScaleFactor;
+
+    pulseTimer += effectiveDeltaTime;
 
     // 更新道具效果计时器
     if (speedBoostTimer > 0) {
@@ -34,6 +43,48 @@ void Player::update(float deltaTime) {
         shieldTimer -= deltaTime;
         if (shieldTimer <= 0) {
             hasShieldActive = false;
+        }
+    }
+
+    // 新增：更新新道具效果
+    if (doubleJumpTimer > 0) {
+        doubleJumpTimer -= deltaTime;
+        if (doubleJumpTimer <= 0) {
+            hasDoubleJump = false;
+            maxJumps = 2;  // 恢复到2段跳
+        }
+    }
+
+    if (slowTimeTimer > 0) {
+        slowTimeTimer -= deltaTime;
+        if (slowTimeTimer <= 0) {
+            timeScaleFactor = 1.0f;  // 恢复正常时间
+        }
+    }
+
+    if (magneticFieldTimer > 0) {
+        magneticFieldTimer -= deltaTime;
+        if (magneticFieldTimer <= 0) {
+            magnetRadius = 0.0f;
+        }
+    }
+
+    if (freezeObstaclesTimer > 0) {
+        freezeObstaclesTimer -= deltaTime;
+        if (freezeObstaclesTimer <= 0) {
+            obstaclesFrozen = false;
+        }
+    }
+
+    if (invulnerabilityTimer > 0) {
+        invulnerabilityTimer -= deltaTime;
+    }
+
+    // 新增：更新无敌计时器
+    if (invincibilityTimer > 0) {
+        invincibilityTimer -= deltaTime;
+        if (invincibilityTimer <= 0) {
+            hasInvincibility = false;
         }
     }
 
@@ -54,26 +105,27 @@ void Player::update(float deltaTime) {
         }
     }
 
-    // 重力
+    // 重力应用
     if (!onGround) {
-        vy += GRAVITY * deltaTime;
+        vy += GRAVITY * effectiveDeltaTime;
         if (vy > MAX_FALL_SPEED) {
             vy = MAX_FALL_SPEED;
         }
-    } else {
-        // 只有当垂直速度向下时才停止垂直移动，这样弹簧平台设置的向上速度就不会被覆盖
+    }
+    else {
+        // 只有当垂直速度向下时才停止垂直移动
         if (vy > 0) {
             vy = 0;
         }
-        // 如果vy < 0（向上运动），保持不变，让玩家可以弹起
+        // 如果vy < 0（向上运动），保持不变，让玩家可以弹起或跳跃
     }
 
     // 摩擦力
     vx *= FRICTION;
 
     // 更新位置
-    x += vx * deltaTime;
-    y += vy * deltaTime;
+    x += vx * effectiveDeltaTime;
+    y += vy * effectiveDeltaTime;
 
     // 如果玩家开始向上移动，应该离开地面
     if (vy < 0) {
@@ -81,21 +133,23 @@ void Player::update(float deltaTime) {
     }
 
     // 更新粒子
-    updateParticles(deltaTime);
+    updateParticles(effectiveDeltaTime);
 }
 
 void Player::setOnGround(bool grounded) {
     wasOnGround = onGround;
     onGround = grounded;
 
-    if (onGround && !wasOnGround && vy > 0) {  // 添加vy > 0条件，确保是从上方落下
+    if (onGround && !wasOnGround && vy > 0) {
         jumpCount = 0;
+
+        // 播放着陆音效
+        AudioManager::getInstance().playSound(SoundType::LAND, false);
+
         createLandingParticles();
-        addCombo();  // 只在真正着陆时增加连击
 
         // 着陆震动
         addScreenShake(2.0f);
-
         lastLandingTime = pulseTimer;
     }
 }
@@ -139,6 +193,10 @@ void Player::jump() {
         onGround = false;
         jumpCount++;
 
+        // 播放跳跃音效
+        try {
+            AudioManager::getInstance().playSound(SoundType::JUMP, false);
+        }catch(...){}
         createJumpParticles();
         addScreenShake(1.5f);
 
@@ -154,26 +212,87 @@ void Player::jump() {
     }
 }
 
-void Player::applySpeedBoost() {
-    speedBoostTimer = 5.0f;  // 5秒加速效果
-    // 添加特效爆发
-    createSpeedBoostEffect();
+void Player::updateComboSystem(float platformY) {
+    currentPlatformY = platformY;
 
-    // 新增：道具加分
-    addBonusScore(50);  // 速度提升道具+50分
+    // 检查是否应该增加combo
+    if (shouldIncrementCombo(platformY)) {
+        comboCount++;
+        comboTimer = 3.0f;  // 3秒内必须继续跳跃才能保持连击
+
+        // 连击特效
+        if (comboCount > 3) {
+            AudioManager::getInstance().playSound(SoundType::COMBO_SOUND, false);
+            createComboEffect();
+        }
+    }
+
+    // 更新上一个平台记录
+    lastPlatformY = platformY;
+    hasValidLastPlatform = true;
+}
+
+// 判断是否应该增加combo
+bool Player::shouldIncrementCombo(float newPlatformY) {
+    // 如果没有有效的上一个平台记录，不增加combo
+    if (!hasValidLastPlatform) {
+        return false;
+    }
+
+    // 如果在同一个平台上（Y坐标相同或非常接近），不增加combo
+    if (abs(newPlatformY - lastPlatformY) < 5.0f) {
+        return false;
+    }
+
+    // 如果当前平台高度不大于起跳平台高度，不增加combo
+    // 注意：Y坐标值越小表示越高，所以newPlatformY应该小于lastPlatformY
+    if (newPlatformY >= lastPlatformY) {
+        return false;
+    }
+
+    return true;
+}
+
+// 重置Combo系统
+void Player::resetComboSystem() {
+    hasValidLastPlatform = false;
+    lastPlatformY = 0.0f;
+    currentPlatformY = 0.0f;
+}
+
+void Player::applySpeedBoost() {
+    speedBoostTimer = 5.0f;
+
+    // 新增：播放道具收集音效
+    AudioManager::getInstance().playSound(SoundType::ITEM_COLLECT, false);
+
+    createSpeedBoostEffect();
+    addBonusScore(50);
     incrementItemsCollected();
 }
 
 void Player::applyShield() {
     hasShieldActive = true;
-    shieldTimer = 10.0f;  // 10秒护盾效果
-    shieldUsed = false;   // 重置使用标记
-    // 添加护盾激活特效
-    createShieldActivateEffect();
+    shieldTimer = 10.0f;
+    shieldUsed = false;
 
-    // 新增：道具加分
-    addBonusScore(100); // 护盾道具+100分
+    AudioManager::getInstance().playSound(SoundType::SHIELD_ACTIVATE, false);
+
+    createShieldActivateEffect();
+    addBonusScore(100);
     incrementItemsCollected();
+}
+
+void Player::applyInvincibility() {
+    invincibilityTimer = 8.0f;
+    hasInvincibility = true;
+
+    // 新增：播放无敌音效
+    AudioManager::getInstance().playSound(SoundType::INVINCIBILITY, false);
+
+    addBonusScore(150);
+    incrementItemsCollected();
+    createInvincibilityEffect();
 }
 
 // 新增：添加奖励分数
@@ -195,26 +314,13 @@ void Player::consumeShield() {
 }
 
 void Player::addCombo() {
-    // 修复：添加连击间隔检查，避免过快连击
-    static float lastComboTime = 0;
-    float currentTime = pulseTimer;
-
-    // 只有间隔超过0.1秒才能增加连击
-    if (currentTime - lastComboTime > 0.1f) {
-        comboCount++;
-        comboTimer = 3.0f;  // 3秒内必须继续跳跃才能保持连击
-        lastComboTime = currentTime;
-
-        // 连击特效
-        if (comboCount > 3) {
-            createComboEffect();
-        }
-    }
+    // 这个方法现在被updateComboSystem替代，保留这个方法以保持兼容性，但不执行任何操作
 }
 
 void Player::resetCombo() {
     comboCount = 0;
     comboTimer = 0.0f;
+    resetComboSystem();  // 同时重置combo系统
 }
 
 void Player::createJumpParticles() {
@@ -229,6 +335,23 @@ void Player::createJumpParticles() {
             cos(angle) * speed, sin(angle) * speed - 20,
             0.8f + (rand() % 40) * 0.01f,
             Theme::PARTICLE_JUMP
+        ));
+    }
+}
+
+// 新增：无敌激活特效
+void Player::createInvincibilityEffect() {
+    for (int i = 0; i < 30; i++) {
+        float angle = (float)i / 30.0f * 6.28f;
+        float radius = 30 + rand() % 20;
+        float px = x + width / 2 + cos(angle) * radius;
+        float py = y + height / 2 + sin(angle) * radius;
+
+        particles.push_back(Particle(
+            px, py,
+            cos(angle) * 30, sin(angle) * 30,
+            2.5f,
+            RGB(255, 215, 0)  // 金色无敌特效
         ));
     }
 }
@@ -417,6 +540,30 @@ void Player::drawWithOffset(float offsetX, float offsetY) {
             (int)(20 + 5 * shieldPulse), Theme::SHIELD_GLOW, 0.4f);
     }
 
+    // 新增：无敌效果绘制
+    if (hasInvincibilityActive()) {
+        // 绘制无敌光环
+        float invincibilityPulse = AnimationUtils::pulse(pulseTimer, 4.0f);
+        COLORREF invincibilityColor = RGB(255, 215, 0);  // 金色
+
+        // 绘制多层无敌光环
+        for (int i = 0; i < 3; i++) {
+            float radius = 35 + i * 10 + invincibilityPulse * 5;
+            float alpha = 0.3f - i * 0.1f;
+            DrawUtils::drawGlowCircle((int)(drawX + width / 2), (int)(drawY + height / 2),
+                (int)radius, invincibilityColor, alpha);
+        }
+
+        // 绘制星星特效
+        for (int i = 0; i < 8; i++) {
+            float angle = (float)i / 8.0f * 6.28f + pulseTimer * 2.0f;
+            float starRadius = 40 + sin(pulseTimer * 3.0f + i) * 10;
+            float starX = drawX + width / 2 + cos(angle) * starRadius;
+            float starY = drawY + height / 2 + sin(angle) * starRadius;
+            DrawUtils::drawSparkle(starX, starY, 6.0f, invincibilityColor, pulseTimer + i);
+        }
+    }
+
     // 绘制玩家光晕（根据状态）
     COLORREF glowColor = Theme::PLAYER_MAIN;
     float glowIntensity = 0.3f;
@@ -428,6 +575,11 @@ void Player::drawWithOffset(float offsetX, float offsetY) {
     if (hasShieldActive) {
         glowColor = Theme::SHIELD_GLOW;
         glowIntensity = 0.5f;
+    }
+    // 新增：无敌状态光晕
+    if (hasInvincibilityActive()) {
+        glowColor = RGB(255, 215, 0);  // 金色光晕
+        glowIntensity = 0.8f;
     }
 
     // 连击光晕
@@ -454,6 +606,11 @@ void Player::drawWithOffset(float offsetX, float offsetY) {
     if (hasShieldActive) {
         playerColor = AnimationUtils::colorPulse(Theme::PLAYER_MAIN,
             Theme::PLAYER_SHIELD_EFFECT, pulseTimer, 3.0f);
+    }
+    // 新增：无敌状态颜色
+    if (hasInvincibilityActive()) {
+        playerColor = AnimationUtils::colorPulse(Theme::PLAYER_MAIN,
+            RGB(255, 215, 0), pulseTimer, 5.0f);
     }
 
     setfillcolor(playerColor);
@@ -506,7 +663,29 @@ void Player::reset() {
     speedBoostTimer = 0.0f;
     shieldTimer = 0.0f;
     hasShieldActive = false;
-    shieldUsed = false; // 重置护盾使用标记
+    shieldUsed = false;
+
+    // 重置新道具效果
+    doubleJumpTimer = 0.0f;
+    slowTimeTimer = 0.0f;
+    magneticFieldTimer = 0.0f;
+    freezeObstaclesTimer = 0.0f;
+
+    // 重置无敌状态
+    invincibilityTimer = 0.0f;
+    hasInvincibility = false;
+
+    // 重置玩家状态
+    health = maxHealth = 3;
+    invulnerabilityTimer = 0.0f;
+    coins = 0;
+
+    // 重置道具效果强度
+    timeScaleFactor = 1.0f;
+    magnetRadius = 0.0f;
+    hasDoubleJump = false;
+    obstaclesFrozen = false;
+    maxJumps = 2;
 
     // 重置连击
     resetCombo();
@@ -535,8 +714,79 @@ void Player::checkBounds(int windowWidth, int windowHeight) {
     }
 
     // 上边界
-    if (y < -height) {
+    /*if (y < -height) {
         y = -height;
         vy = 0;
-    }
+    }*/
+}
+
+void Player::applyDoubleJump() {
+    doubleJumpTimer = 10.0f;  // 10秒额外跳跃
+    hasDoubleJump = true;
+    maxJumps = 3;  // 增加到3段跳
+    addBonusScore(75);
+    incrementItemsCollected();
+}
+
+void Player::applySlowTime() {
+    slowTimeTimer = 8.0f;  // 8秒时间减缓
+    timeScaleFactor = 0.5f;  // 时间减缓到50%
+    addBonusScore(100);
+    incrementItemsCollected();
+}
+
+void Player::applyMagneticField() {
+    magneticFieldTimer = 15.0f;  // 15秒磁场效果
+    magnetRadius = 150.0f;  // 磁场半径
+    addBonusScore(80);
+    incrementItemsCollected();
+}
+
+void Player::applyHealthBoost() {
+    heal(2);  // 恢复2点生命
+    addBonusScore(60);
+    incrementItemsCollected();
+}
+
+void Player::applyFreezeObstacles() {
+    freezeObstaclesTimer = 10.0f;  // 10秒冻结障碍物
+    obstaclesFrozen = true;
+    addBonusScore(120);
+    incrementItemsCollected();
+}
+
+void Player::collectCoin(int value) {
+    coins += value;
+    addBonusScore(value);
+    // 添加收集特效
+    createSpeedBoostEffect(); // 重用特效
+}
+
+void Player::takeDamage(int damage) {
+    if (invulnerabilityTimer > 0) return;
+
+    health -= damage;
+    if (health < 0) health = 0;
+
+    // 新增：播放受伤音效
+    AudioManager::getInstance().playSound(SoundType::DAMAGE_SOUND, false);
+
+    // 设置无敌时间
+    invulnerabilityTimer = 1.0f;
+
+    // 添加受伤特效
+    addScreenShake(4.0f);
+}
+
+// 添加死亡检查函数
+bool Player::isDead() const {
+    return health <= 0;
+}
+
+void Player::heal(int amount) {
+    health += amount;
+    if (health > maxHealth) health = maxHealth;
+
+    // 添加治疗特效
+    createShieldActivateEffect();
 }

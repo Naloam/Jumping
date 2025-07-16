@@ -328,6 +328,200 @@ namespace DrawUtils {
         }
     }
 
+    // 二段跳特效
+    void drawDoubleJumpEffect(float x, float y, float intensity) {
+        COLORREF doubleJumpColor = Theme::ITEM_DOUBLE_JUMP;
+
+        // 绘制双层跳跃轨迹
+        for (int i = 0; i < 2; i++) {
+            float offset = i * 8.0f;
+            float alpha = intensity * (1.0f - i * 0.3f);
+            COLORREF currentColor = blendColor(RGB(255, 255, 255), doubleJumpColor, alpha);
+
+            setlinecolor(currentColor);
+            setlinestyle(PS_SOLID, 3);
+
+            // 绘制向上的弧形轨迹
+            for (int j = 0; j < 10; j++) {
+                float startX = x - 15 + j * 3;
+                float startY = y + 10 - j * 2;
+                float endX = x - 15 + (j + 1) * 3;
+                float endY = y + 10 - (j + 1) * 2 - offset;
+
+                line((int)startX, (int)startY, (int)endX, (int)endY);
+            }
+        }
+    }
+
+    // 新增：时间减缓特效
+    void drawSlowTimeEffect(float x, float y, float intensity) {
+        COLORREF slowTimeColor = Theme::ITEM_SLOW_TIME;
+
+        // 绘制时间波纹
+        for (int i = 0; i < 3; i++) {
+            float radius = 20 + i * 10;
+            float alpha = intensity * (0.6f - i * 0.2f);
+            COLORREF currentColor = blendColor(RGB(255, 255, 255), slowTimeColor, alpha);
+
+            setlinecolor(currentColor);
+            setlinestyle(PS_SOLID, 2);
+            circle((int)x, (int)y, (int)radius);
+        }
+
+        // 绘制中心时钟图标
+        setlinecolor(RGB(255, 255, 255));
+        setlinestyle(PS_SOLID, 2);
+        circle((int)x, (int)y, 8);
+        line((int)x, (int)y, (int)(x + 6), (int)(y - 3)); // 时针
+        line((int)x, (int)y, (int)(x + 3), (int)(y - 6)); // 分针
+    }
+
+    // 新增：磁场特效
+    void drawMagneticFieldEffect(float x, float y, float radius, float intensity) {
+        COLORREF magneticColor = Theme::ITEM_MAGNETIC_FIELD;
+
+        // 绘制磁场线
+        for (int i = 0; i < 8; i++) {
+            float angle = i * 3.14159f / 4;
+            float startRadius = radius * 0.3f;
+            float endRadius = radius;
+
+            float startX = x + startRadius * cos(angle);
+            float startY = y + startRadius * sin(angle);
+            float endX = x + endRadius * cos(angle);
+            float endY = y + endRadius * sin(angle);
+
+            COLORREF currentColor = blendColor(RGB(255, 255, 255), magneticColor, intensity);
+            setlinecolor(currentColor);
+            setlinestyle(PS_SOLID, 2);
+            line((int)startX, (int)startY, (int)endX, (int)endY);
+        }
+
+        // 绘制中心磁铁图标
+        setfillcolor(magneticColor);
+        solidrectangle((int)(x - 6), (int)(y - 8), (int)(x + 6), (int)(y + 8));
+
+        // 绘制N和S标记
+        settextcolor(RGB(255, 255, 255));
+        settextstyle(10, 0, L"Arial");
+        outtextxy((int)(x - 3), (int)(y - 6), L"N");
+        outtextxy((int)(x - 3), (int)(y + 2), L"S");
+    }
+
+    // 新增：冻结障碍物特效
+    void drawFreezeObstaclesEffect(float x, float y, float intensity) {
+        COLORREF freezeColor = Theme::ITEM_FREEZE_OBSTACLES;
+
+        // 绘制冰晶效果
+        for (int i = 0; i < 6; i++) {
+            float angle = i * 3.14159f / 3;
+            float length = 15 * intensity;
+
+            float endX = x + length * cos(angle);
+            float endY = y + length * sin(angle);
+
+            setlinecolor(freezeColor);
+            setlinestyle(PS_SOLID, 3);
+            line((int)x, (int)y, (int)endX, (int)endY);
+
+            // 绘制分支
+            float branchLength = length * 0.5f;
+            float branchAngle1 = angle + 0.5f;
+            float branchAngle2 = angle - 0.5f;
+
+            line((int)endX, (int)endY,
+                (int)(endX + branchLength * cos(branchAngle1)),
+                (int)(endY + branchLength * sin(branchAngle1)));
+            line((int)endX, (int)endY,
+                (int)(endX + branchLength * cos(branchAngle2)),
+                (int)(endY + branchLength * sin(branchAngle2)));
+        }
+    }
+
+    // 新增：生命值恢复特效
+    void drawHealthBoostEffect(float x, float y, float intensity) {
+        COLORREF healthColor = Theme::ITEM_HEALTH_BOOST;
+
+        // 绘制生命十字光晕
+        for (int i = 0; i < 3; i++) {
+            float size = 8 + i * 4;
+            float alpha = intensity * (0.8f - i * 0.2f);
+            COLORREF currentColor = blendColor(RGB(255, 255, 255), healthColor, alpha);
+
+            setlinecolor(currentColor);
+            setlinestyle(PS_SOLID, 4 - i);
+
+            // 绘制十字
+            line((int)(x - size), (int)y, (int)(x + size), (int)y);
+            line((int)x, (int)(y - size), (int)x, (int)(y + size));
+        }
+    }
+
+    // 新增：无敌特效
+    void drawInvincibilityEffect(float x, float y, float intensity) {
+        COLORREF invincibilityColor = Theme::ITEM_INVINCIBILITY;
+
+        // 绘制星星光环
+        for (int ring = 0; ring < 3; ring++) {
+            float radius = 20 + ring * 10;
+            float alpha = intensity * (0.7f - ring * 0.2f);
+            COLORREF currentColor = blendColor(RGB(255, 255, 255), invincibilityColor, alpha);
+
+            setlinecolor(currentColor);
+            setlinestyle(PS_SOLID, 2);
+
+            // 绘制星星形状
+            for (int i = 0; i < 8; i++) {
+                float angle = i * 3.14159f / 4;
+                float starRadius = (i % 2 == 0) ? radius : radius * 0.6f;
+
+                float pointX = x + starRadius * cos(angle);
+                float pointY = y + starRadius * sin(angle);
+
+                if (i == 0) {
+                    line((int)x, (int)y, (int)pointX, (int)pointY);
+                }
+                else {
+                    float prevAngle = (i - 1) * 3.14159f / 4;
+                    float prevRadius = ((i - 1) % 2 == 0) ? radius : radius * 0.6f;
+                    float prevX = x + prevRadius * cos(prevAngle);
+                    float prevY = y + prevRadius * sin(prevAngle);
+
+                    line((int)prevX, (int)prevY, (int)pointX, (int)pointY);
+                }
+            }
+        }
+    }
+
+    // 更新getItemColor函数以支持新道具
+    COLORREF getItemColor(ItemType type, float animationTime) {
+        float pulse = std::sin(animationTime * 3.0f) * 0.2f + 0.8f;
+
+        switch (type) {
+        case SPEED_BOOST:
+            return adjustBrightness(Theme::ITEM_SPEED, pulse);
+        case SHIELD:
+            return adjustBrightness(Theme::ITEM_SHIELD, pulse);
+        case DOUBLE_JUMP:
+            return adjustBrightness(Theme::ITEM_DOUBLE_JUMP, pulse);
+        case SLOW_TIME:
+            return adjustBrightness(Theme::ITEM_SLOW_TIME, pulse);
+        case MAGNETIC_FIELD:
+            return adjustBrightness(Theme::ITEM_MAGNETIC_FIELD, pulse);
+        case FREEZE_OBSTACLES:
+            return adjustBrightness(Theme::ITEM_FREEZE_OBSTACLES, pulse);
+        case HEALTH_BOOST:
+            return adjustBrightness(Theme::ITEM_HEALTH_BOOST, pulse);
+        case INVINCIBILITY:
+            return adjustBrightness(Theme::ITEM_INVINCIBILITY, pulse);
+        case COIN:
+            return adjustBrightness(Theme::ITEM_COIN, pulse);
+        case NONE:
+        default:
+            return RGB(255, 255, 255);
+        }
+    }
+
     COLORREF getComboColor(int comboCount) {
         if (comboCount < 5) return Theme::COMBO_LOW;
         else if (comboCount < 10) return Theme::COMBO_MEDIUM;
@@ -347,20 +541,6 @@ namespace DrawUtils {
             return isActive ? Theme::PLATFORM_SPRING_ACTIVE : Theme::PLATFORM_SPRING;
         default:
             return Theme::PLATFORM_NORMAL;
-        }
-    }
-
-    COLORREF getItemColor(ItemType type, float animationTime) {
-        float pulse = std::sin(animationTime * 3.0f) * 0.2f + 0.8f;
-
-        switch (type) {
-        case SPEED_BOOST:
-            return adjustBrightness(Theme::ITEM_SPEED, pulse);
-        case SHIELD:
-            return adjustBrightness(Theme::ITEM_SHIELD, pulse);
-        case NONE:
-        default:
-            return RGB(255, 255, 255);
         }
     }
 

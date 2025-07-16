@@ -24,12 +24,24 @@
     <ClCompile Include="Platform.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Theme.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Player.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Platform.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Theme.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
