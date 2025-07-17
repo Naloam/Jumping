@@ -29,7 +29,7 @@ Platform::Platform(float x, float y, float width, float height, PlatformType typ
         break;
     }
 
-    // 修复：恢复所有道具类型生成
+    // 道具类型生成
     if (type == NORMAL && rand() % 100 < 20) {  // 20% 概率生成道具
         int itemChoice = rand() % 100;
         if (itemChoice < 35) {  // 35% 概率生成金币
@@ -204,7 +204,7 @@ float Platform::handleCollision(float playerX, float playerY, float playerWidth,
         break;
 
     case SPRING:
-        // 修复：改进弹簧触发条件
+        // 改进弹簧触发条件
         // 1. 玩家向下移动时触发弹簧
         // 2. 玩家静止在弹簧上时也应该能够被弹起（如果按跳跃键）
         if (playerVY >= -50.0f) {  // 放宽条件，允许轻微向上速度时也能触发
@@ -260,7 +260,7 @@ void Platform::triggerBreak() {
 void Platform::triggerSpring() {
     springCompression = 1.0f;
     wasTriggered = true;
-    // 新增：播放弹簧音效
+    // 播放弹簧音效
     AudioManager::getInstance().playSound(SoundType::SPRING_BOUNCE, false);
 }
 
@@ -327,7 +327,7 @@ void Platform::drawWithOffset(float offsetX, float offsetY) const {
         float arrowY = drawY - 8;
 
         setfillcolor(Theme::ACCENT);
-        // 绘制箭头 - 修复：用大括号包装变量定义
+        // 绘制箭头
         POINT arrow[3];
         if (moveDirection > 0) {
             arrow[0] = { (int)arrowX, (int)arrowY };
@@ -455,7 +455,7 @@ void Platform::drawWithOffset(float offsetX, float offsetY) const {
     }
 }
 
-// 增强道具绘制效果 - 修复diamond初始化问题
+// 增强道具绘制效果
 void Platform::drawItem(const Item* itemPtr, float offsetX, float offsetY) const {
     if (!itemPtr) return;
 

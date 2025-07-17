@@ -1,0 +1,64 @@
+graph TB
+    %% 主控制层
+    subgraph "游戏控制层"
+        A[Game 游戏主控制器]
+        B[GameState 状态管理器]
+        C[InputHandler 输入处理器]
+    end
+    
+    %% 核心系统层
+    subgraph "核心系统层"
+        D[Player 玩家系统]
+        E[Platform 平台系统]
+        F[Camera 相机系统]
+        G[Audio 音频系统]
+    end
+    
+    %% 渲染层
+    subgraph "渲染层"
+        H[Renderer 渲染器]
+        I[Theme 主题系统]
+        J[Particles 粒子系统]
+        K[Background 背景系统]
+    end
+    
+    %% 游戏逻辑层
+    subgraph "游戏逻辑层"
+        L[Score 分数系统]
+        M[Collision 碰撞系统]
+        N[Obstacle 障碍系统]
+        O[Item 道具系统]
+    end
+    
+    %% 连接关系
+    A --> B
+    A --> C
+    A --> D
+    A --> E
+    A --> F
+    A --> G
+    A --> H
+    A --> L
+    A --> M
+    
+    D --> J
+    E --> O
+    E --> N
+    H --> I
+    H --> K
+    H --> J
+    
+    M --> D
+    M --> E
+    M --> N
+    
+    %% 样式
+    classDef controlLayer fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef coreLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef renderLayer fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef logicLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    
+    class A,B,C controlLayer
+    class D,E,F,G coreLayer
+    class H,I,J,K renderLayer
+    class L,M,N,O logicLayer

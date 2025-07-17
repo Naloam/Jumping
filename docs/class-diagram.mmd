@@ -1,0 +1,296 @@
+classDiagram
+    class Game {
+        -currentState: GameState
+        -player: Player
+        -platforms: vector~Platform~
+        -score: long long
+        -audioManager: AudioManager
+        +update(deltaTime: float)
+        +render()
+        +handleInput()
+    }
+    
+    class Player {
+        -x, y: float
+        -vx, vy: float
+        -health: int
+        -onGround: bool
+        +update(deltaTime: float)
+        +jump()
+        +moveLeft()
+        +moveRight()
+        +takeDamage(damage: int)
+    }
+    
+    class Platform {
+        -x, y: float
+        -width, height: float
+        -type: PlatformType
+        -item: unique_ptr~Item~
+        +update(deltaTime: float)
+        +checkCollision(player: Player): bool
+        +collectItem(): Item*
+    }
+    
+    class AudioManager {
+        -masterVolume: float
+        -musicVolume: float
+        -sfxVolume: float
+        +playSound(type: SoundType)
+        +setMasterVolume(volume: float)
+        +getInstance(): AudioManager&
+    }
+    
+    class Item {
+        <<struct>>
+        +type: ItemType
+        +value: int
+        +duration: float
+    }
+    
+    class GameState {
+        <<enumeration>>
+        MENU
+        PLAYING
+        PAUSED
+        GAME_OVER
+        HELP
+        AUDIO_SETTINGS
+    }
+    
+    class PlatformType {
+        <<enumeration>>
+        NORMAL
+        MOVING
+        BREAKABLE
+        SPRING
+    }
+    
+    Game --> Player
+    Game --> Platform
+    Game --> AudioManager
+    Game --> GameState
+    Platform --> Item
+    Platform --> PlatformType
+    
+    class Player {
+        -float x, y
+        -float vx, vy
+        -float width, height
+        -bool onGround
+        -int health
+        -int maxHealth
+        -float speedBoostTimer
+        -float shieldTimer
+        -int comboCount
+        -vector~Particle~ particles
+        +Player(x, y)
+        +update(deltaTime)
+        +draw()
+        +handleInput()
+        +applySpeedBoost()
+        +applyShield()
+        +takeDamage(damage)
+        +collectCoin()
+        +updateComboSystem(platformY)
+    }
+    
+    class Platform {
+        -float x, y
+        -float width, height
+        -PlatformType type
+        -unique_ptr~Item~ item
+        -bool broken
+        -float moveSpeed
+        +Platform(x, y, width, height, type)
+        +update(deltaTime)
+        +draw()
+        +checkCollision(player)
+        +spawnItem()
+        +collectItem()
+        +breakPlatform()
+    }
+    
+    class Obstacle {
+        -float x, y
+        -float width, height
+        -ObstacleType type
+        -float vx, vy
+        -bool active
+        -float damage
+        -float animationTimer
+        +Obstacle(x, y, type)
+        +update(deltaTime, worldSpeed)
+        +draw()
+        +checkCollision(player)
+        +isActive()
+        +getDamage()
+    }
+    
+    class Coin {
+        -float x, y
+        -float animationTimer
+        -float bobOffset
+        -bool collected
+        -int value
+        -bool beingMagnetized
+        +Coin(x, y, value)
+        +update(deltaTime, worldSpeed)
+        +draw()
+        +checkCollision(player)
+        +magnetizeToward(playerX, playerY)
+        +collect()
+    }
+    
+    class AudioManager {
+        -static AudioManager* instance
+        -bool audioEnabled
+        -float masterVolume
+        -float musicVolume
+        -float sfxVolume
+        -map~SoundType, string~ soundPaths
+        +getInstance()
+        +initialize()
+        +playSound(type, loop)
+        +playBackgroundMusic(type)
+        +setMasterVolume(volume)
+        +setMusicVolume(volume)
+        +setSFXVolume(volume)
+        +onGameStart()
+        +onGameOver()
+    }
+    
+    class Item {
+        -float x, y
+        -ItemType type
+        -float animationTimer
+        -bool collected
+        -int value
+        +Item(x, y, type)
+        +update(deltaTime)
+        +draw()
+        +checkCollision(player)
+        +getType()
+        +getValue()
+    }
+    
+    class BackgroundScrolling {
+        -vector~BackgroundLayer~ layers
+        +BackgroundScrolling()
+        +update(deltaTime, cameraSpeed)
+        +draw(cameraY)
+    }
+    
+    class PlatformGenerator {
+        -float MAX_JUMP_HEIGHT
+        -float MAX_JUMP_DISTANCE
+        +generateRandomPlatform(y, difficulty)
+        +calculatePlatformSpacing(difficulty)
+        +selectPlatformType(difficulty)
+        +shouldSpawnItem()
+    }
+    
+    class Theme {
+        +BACKGROUND: COLORREF
+        +PRIMARY: COLORREF
+        +PLAYER_MAIN: COLORREF
+        +PLATFORM_NORMAL: COLORREF
+        +ITEM_SPEED: COLORREF
+        +ITEM_SHIELD: COLORREF
+        +TEXT_PRIMARY: COLORREF
+        +getItemColor(type)
+        +getPlatformColor(type)
+        +getObstacleColor(type)
+    }
+    
+    class Particle {
+        -float x, y
+        -float vx, vy
+        -float life
+        -float maxLife
+        -COLORREF color
+        +Particle(x, y, vx, vy, life, color)
+        +update(deltaTime)
+        +draw()
+        +isAlive()
+    }
+    
+    %% 枚举类型
+    class GameState {
+        <<enumeration>>
+        MENU
+        HELP
+        AUDIO_SETTINGS
+        PLAYING
+        PAUSED
+        GAME_OVER
+    }
+    
+    class PlatformType {
+        <<enumeration>>
+        NORMAL
+        MOVING
+        BREAKABLE
+        SPRING
+    }
+    
+    class ItemType {
+        <<enumeration>>
+        SPEED_BOOST
+        SHIELD
+        DOUBLE_JUMP
+        SLOW_TIME
+        MAGNETIC_FIELD
+        HEALTH_BOOST
+        FREEZE_OBSTACLES
+        COIN
+        INVINCIBILITY
+    }
+    
+    class ObstacleType {
+        <<enumeration>>
+        SPIKE
+        FIREBALL
+        LASER
+        ROTATING_SAW
+        FALLING_ROCK
+        MOVING_WALL
+    }
+    
+    class SoundType {
+        <<enumeration>>
+        BACKGROUND_MUSIC
+        MENU_MUSIC
+        JUMP
+        LAND
+        COIN_COLLECT
+        ITEM_COLLECT
+        OBSTACLE_HIT
+        GAME_OVER
+    }
+    
+    %% 关系
+    Game --> Player : contains
+    Game --> Platform : contains multiple
+    Game --> Obstacle : contains multiple
+    Game --> Coin : contains multiple
+    Game --> AudioManager : uses
+    Game --> BackgroundScrolling : contains
+    Game --> PlatformGenerator : contains
+    Game --> GameState : uses
+    
+    Player --> Particle : contains multiple
+    Player --> ItemType : affected by
+    
+    Platform --> Item : contains
+    Platform --> PlatformType : has type
+    
+    Obstacle --> ObstacleType : has type
+    
+    Item --> ItemType : has type
+    
+    AudioManager --> SoundType : manages
+    
+    Theme --> ItemType : provides colors for
+    Theme --> PlatformType : provides colors for
+    Theme --> ObstacleType : provides colors for

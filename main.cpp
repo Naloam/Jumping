@@ -187,7 +187,6 @@ private:
     float initialPlayerY;   // 记录初始Y位置
     float camera_y;
 
-    // 新增系统
     BackgroundScrolling background;
     PlatformPreview platformPreview;
 
@@ -218,18 +217,18 @@ private:
     float highestPlatformY;
     float platformSpawnThreshold;
 
-    // 新增：平滑镜头速度控制
+    // 平滑镜头速度控制
     float smoothCameraSpeed;
     float cameraSpeedAcceleration;
     float maxSafeCameraSpeed;
 
-    // 新增：玩家垂直速度统计
+    // 玩家垂直速度统计
     std::vector<float> playerVerticalSpeedSamples;
     float averagePlayerVerticalSpeed;
     float lastPlayerY;
     float playerSpeedSampleTime;
 
-    // 新增：世界速度平滑控制
+    // 世界速度平滑控制
     float maxWorldSpeed;
     float worldSpeedSmoothing;
 
@@ -245,7 +244,7 @@ private:
     std::vector<Obstacle> obstacles;
     std::vector<Coin> coins;
 
-    // 新增：生成器
+    // 生成器
     float obstacleSpawnTimer;
     float coinSpawnTimer;
     float obstacleSpawnRate;
@@ -265,12 +264,12 @@ private:
         }
     };
 
-    // 新增：菜单按钮
+    // 菜单按钮
     Button startButton;
     Button helpButton;
     Button backButton;  // 帮助页面的返回按钮
 
-    // 新增：鼠标状态
+    // 鼠标状态
     bool mouseWasPressed;
     int mouseX, mouseY;
 
@@ -279,7 +278,7 @@ private:
     const float HELP_SCROLL_SPEED = 30.0f;  // 滚动速度
 
     AudioManager& audioManager;
-    // 新增：音频设置相关变量
+    // 音频设置相关变量
     Button audioSettingsButton;
     Button backFromAudioButton;
     Button muteButton;
@@ -312,7 +311,7 @@ public:
         helpScrollOffset(0.0f), maxHelpScrollOffset(0.0f),
         startButton(WINDOW_WIDTH / 2 - 100, 300, 200, 50, L"Start Game"),
         helpButton(WINDOW_WIDTH / 2 - 100, 370, 200, 50, L"Help"),
-        audioSettingsButton(WINDOW_WIDTH / 2 - 100, 440, 200, 50, L"Audio Settings"),  // 新增
+        audioSettingsButton(WINDOW_WIDTH / 2 - 100, 440, 200, 50, L"Audio Settings"), 
         backButton(WINDOW_WIDTH / 2 - 100, 650, 200, 50, L"Back to Menu"),
         muteButton(WINDOW_WIDTH / 2 - 100, 180, 200, 50, L"Toggle Mute"),
         masterVolumeDownButton(WINDOW_WIDTH / 2 - 250, 260, 100, 35, L"Master -"),
@@ -333,7 +332,7 @@ public:
         initializePlatforms();
         positionPlayerOnStartPlatform();
 
-        // 修复：使用地面作为基准点，而不是起始平台
+        // 使用地面作为基准点
         initialPlayerY = WINDOW_HEIGHT - 40;  // 地面平台的顶部
 
         lastPlayerY = player.getY();
@@ -462,7 +461,7 @@ public:
         static bool mReleased = true;
         static bool nReleased = true;
         static bool bReleased = true;
-        static bool vReleased = true;  // 新增：音量调节键
+        static bool vReleased = true;  // 音量调节键
 
         bool mPressed = GetAsyncKeyState('M') & 0x8000;  // 静音/取消静音
         bool nPressed = GetAsyncKeyState('N') & 0x8000;  // 降低音量
@@ -487,7 +486,7 @@ public:
         }
         if (!bPressed) bReleased = true;
 
-        // 新增：V键打开音频设置
+        // V键打开音频设置
         if (vPressed && vReleased && currentState == MENU) {
             currentState = AUDIO_SETTINGS;
             vReleased = false;
@@ -495,7 +494,7 @@ public:
         if (!vPressed) vReleased = true;
     }
 
-    // 新增：更新音频设置状态
+    // 更新音频设置状态
     void updateAudioSettings() {
         static bool backReleased = true;
         static bool mouseReleased = true;
@@ -560,7 +559,7 @@ public:
         if (!backPressed) backReleased = true;
     }
 
-    // 新增：绘制音频设置界面
+    // 绘制音频设置界面
     void drawAudioSettings() {
         // 绘制背景
         setbkcolor(Theme::BACKGROUND);
@@ -637,7 +636,7 @@ public:
         }
     }
 
-    // 新增：绘制音量条
+    // 绘制音量条
     void drawVolumeBar(int x, int y, int width, int height, float volume) {
         // 背景
         setfillcolor(RGB(50, 50, 50));
@@ -675,7 +674,7 @@ public:
         mouseX = cursorPos.x;
         mouseY = cursorPos.y;
 
-        // 修复：改进滚动处理（仅在帮助页面时）
+        // 滚动处理（仅在帮助页面时）
         if (currentState == HELP) {
             // 添加按键释放检查，防止连续触发
             static bool upReleased = true;
@@ -723,23 +722,23 @@ public:
         static bool spaceReleased = true;
         static bool escReleased = true;
         static bool hReleased = true;
-        static bool vReleased = true;  // 新增：V键
+        static bool vReleased = true; 
         static bool mouseReleased = true;
 
         bool spacePressed = GetAsyncKeyState(VK_SPACE) & 0x8000;
         bool escPressed = GetAsyncKeyState(VK_ESCAPE) & 0x8000;
         bool hPressed = GetAsyncKeyState('H') & 0x8000;
-        bool vPressed = GetAsyncKeyState('V') & 0x8000;  // 新增：V键
+        bool vPressed = GetAsyncKeyState('V') & 0x8000;
         bool mousePressed = GetAsyncKeyState(VK_LBUTTON) & 0x8000;
 
         // 更新按钮悬停状态
         bool wasStartHovered = startButton.isHovered;
         bool wasHelpHovered = helpButton.isHovered;
-        bool wasAudioHovered = audioSettingsButton.isHovered;  // 新增
+        bool wasAudioHovered = audioSettingsButton.isHovered;
 
         startButton.isHovered = startButton.isPointInside(mouseX, mouseY);
         helpButton.isHovered = helpButton.isPointInside(mouseX, mouseY);
-        audioSettingsButton.isHovered = audioSettingsButton.isPointInside(mouseX, mouseY);  // 新增
+        audioSettingsButton.isHovered = audioSettingsButton.isPointInside(mouseX, mouseY); 
 
         // 播放悬停音效
         if (!wasStartHovered && startButton.isHovered) {
@@ -748,7 +747,7 @@ public:
         if (!wasHelpHovered && helpButton.isHovered) {
             audioManager.playSound(SoundType::BUTTON_HOVER, false);
         }
-        if (!wasAudioHovered && audioSettingsButton.isHovered) {  // 新增
+        if (!wasAudioHovered && audioSettingsButton.isHovered) { 
             audioManager.playSound(SoundType::BUTTON_HOVER, false);
         }
 
@@ -764,7 +763,7 @@ public:
                 audioManager.playSound(SoundType::BUTTON_CLICK, false);
                 currentState = HELP;
             }
-            else if (audioSettingsButton.isHovered) {  // 新增
+            else if (audioSettingsButton.isHovered) {
                 audioManager.playSound(SoundType::BUTTON_CLICK, false);
                 currentState = AUDIO_SETTINGS;
             }
@@ -788,7 +787,7 @@ public:
         }
         if (!hPressed) hReleased = true;
 
-        if (vPressed && vReleased) {  // 新增：V键进入音频设置
+        if (vPressed && vReleased) {
             audioManager.playSound(SoundType::BUTTON_CLICK, false);
             currentState = AUDIO_SETTINGS;
             vReleased = false;
@@ -816,7 +815,7 @@ public:
         fixedBackButton.y = WINDOW_HEIGHT - 80;
         backButton.isHovered = fixedBackButton.isPointInside(mouseX, mouseY);
 
-        // 新增：播放悬停音效
+        // 播放悬停音效
         if (!wasBackHovered && backButton.isHovered) {
             audioManager.playSound(SoundType::BUTTON_HOVER, false);
         }
@@ -824,9 +823,9 @@ public:
         // 返回菜单
         if ((backspacePressed && backspaceReleased) ||
             (mousePressed && mouseReleased && backButton.isHovered)) {
-            audioManager.playSound(SoundType::BUTTON_CLICK, false);  // 新增：按钮点击音效
+            audioManager.playSound(SoundType::BUTTON_CLICK, false); 
             currentState = MENU;
-            audioManager.onMenuEnter();  // 新增：切换到菜单音乐
+            audioManager.onMenuEnter();
             helpScrollOffset = 0.0f;
             backspaceReleased = false;
             mouseReleased = false;
@@ -868,7 +867,7 @@ public:
         /*if (camera_y < 0) camera_y = 0;*/
     }
 
-    // 新增：更新玩家垂直速度统计
+    // 更新玩家垂直速度统计
     void updatePlayerVerticalSpeedStats(float deltaTime) {
         playerSpeedSampleTime += deltaTime;
 
@@ -906,7 +905,7 @@ public:
         updateCamera(deltaTime);
         updateWorldMovement(deltaTime);
 
-        // 修复：添加障碍物和金币系统更新
+        // 添加障碍物和金币系统更新
         updateObstacles(deltaTime);
         updateCoins(deltaTime);
         spawnObstacles(deltaTime);
@@ -926,7 +925,7 @@ public:
             platform.update(deltaTime);
         }
 
-        // 修复：添加障碍物和金币碰撞检测
+        // 添加障碍物和金币碰撞检测
         checkObstacleCollisions();
         checkCoinCollection();
 
@@ -1025,7 +1024,7 @@ public:
         coinSpawnTimer += deltaTime;
 
         if (coinSpawnTimer >= coinSpawnRate) {
-            // 修复：调整金币生成频率
+            // 金币生成频率
             coinSpawnRate = 4.0f + (rand() % 4); // 4-7秒生成一个金币
 
             // 在平台附近生成金币
@@ -1290,7 +1289,7 @@ public:
                     lastSafePlatform.isValid = true;
                 }
 
-                // 修复：弹簧平台也应该被认为是地面，但弹簧触发时不设置onGround
+                // 弹簧平台也应该被认为是地面，但弹簧触发时不设置onGround
                 if (platform.getType() == SPRING) {
                     if (isSpringTriggered) {
                         // 弹簧触发时，给玩家一个短暂的地面状态，然后立即弹起
@@ -1386,7 +1385,7 @@ public:
         initializePlatforms();
         positionPlayerOnStartPlatform();
 
-        // 修复：保持使用地面作为基准
+        // 保持使用地面作为基准
         initialPlayerY = WINDOW_HEIGHT - 40;  // 地面平台的顶部
 
         lastPlayerY = player.getY();
@@ -1665,7 +1664,7 @@ public:
 
         currentY += sectionSpacing;
 
-        // 修复：重新计算最大滚动偏移，确保正确性
+        // 重新计算最大滚动偏移，确保正确性
         int totalContentHeight = currentY + 150;  // 内容总高度
         int availableHeight = WINDOW_HEIGHT - 160;  // 可用显示区域（减去固定按钮和提示的空间）
         maxHelpScrollOffset = std::max(0.0f, (float)(totalContentHeight - availableHeight));
@@ -1686,7 +1685,7 @@ public:
             setfillcolor(RGB(200, 200, 200));
             solidrectangle((int)scrollBarX, (int)scrollBarY, (int)scrollBarX + 10, (int)(scrollBarY + scrollBarHeight));
 
-            // 修复：改进滚动条滑块计算
+            // 改进滚动条滑块计算
             float contentRatio = (float)availableHeight / totalContentHeight;  // 可见内容比例
             float thumbHeight = std::max(20.0f, scrollBarHeight * contentRatio);  // 滑块高度，最小20像素
             float scrollProgress = helpScrollOffset / maxHelpScrollOffset;  // 滚动进度
@@ -1805,7 +1804,6 @@ public:
         drawGameUI();
     }
 
-    // 修复 drawGameUI 函数
     void drawGameUI() {
         // 绘制描边文字的辅助函数
         auto drawTextWithOutline = [&](const wstring& text, int x, int y, COLORREF textColor) {

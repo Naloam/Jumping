@@ -353,7 +353,7 @@ namespace DrawUtils {
         }
     }
 
-    // 新增：时间减缓特效
+    // 时间减缓特效
     void drawSlowTimeEffect(float x, float y, float intensity) {
         COLORREF slowTimeColor = Theme::ITEM_SLOW_TIME;
 
@@ -376,7 +376,7 @@ namespace DrawUtils {
         line((int)x, (int)y, (int)(x + 3), (int)(y - 6)); // 分针
     }
 
-    // 新增：磁场特效
+    // 磁场特效
     void drawMagneticFieldEffect(float x, float y, float radius, float intensity) {
         COLORREF magneticColor = Theme::ITEM_MAGNETIC_FIELD;
 
@@ -408,7 +408,7 @@ namespace DrawUtils {
         outtextxy((int)(x - 3), (int)(y + 2), L"S");
     }
 
-    // 新增：冻结障碍物特效
+    // 冻结障碍物特效
     void drawFreezeObstaclesEffect(float x, float y, float intensity) {
         COLORREF freezeColor = Theme::ITEM_FREEZE_OBSTACLES;
 
@@ -438,7 +438,7 @@ namespace DrawUtils {
         }
     }
 
-    // 新增：生命值恢复特效
+    // 生命值恢复特效
     void drawHealthBoostEffect(float x, float y, float intensity) {
         COLORREF healthColor = Theme::ITEM_HEALTH_BOOST;
 
@@ -457,7 +457,7 @@ namespace DrawUtils {
         }
     }
 
-    // 新增：无敌特效
+    // 无敌特效
     void drawInvincibilityEffect(float x, float y, float intensity) {
         COLORREF invincibilityColor = Theme::ITEM_INVINCIBILITY;
 

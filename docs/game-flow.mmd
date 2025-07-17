@@ -1,0 +1,58 @@
+flowchart TD
+    %% 启动流程
+    START([🚀 游戏启动]) --> INIT[🔧 系统初始化]
+    INIT --> AUDIO_INIT[🎵 音频初始化]
+    AUDIO_INIT --> MENU[📋 主菜单]
+    
+    %% 主菜单流程
+    MENU --> MENU_INPUT{🎮 用户输入}
+    MENU_INPUT -->|开始游戏| GAME_INIT[🎯 游戏初始化]
+    MENU_INPUT -->|帮助| HELP[📖 帮助页面]
+    MENU_INPUT -->|音频设置| AUDIO_SETTINGS[🔊 音频设置]
+    MENU_INPUT -->|退出| EXIT([🔚 退出游戏])
+    
+    %% 游戏主循环
+    GAME_INIT --> GAME_LOOP[🔄 游戏主循环]
+    GAME_LOOP --> INPUT[⌨️ 处理输入]
+    INPUT --> UPDATE[🎮 更新游戏状态]
+    UPDATE --> PHYSICS[⚡ 物理计算]
+    PHYSICS --> COLLISION[💥 碰撞检测]
+    COLLISION --> RENDER[🎨 渲染画面]
+    
+    %% 游戏状态判断
+    RENDER --> GAME_STATE{🎯 游戏状态}
+    GAME_STATE -->|继续游戏| GAME_LOOP
+    GAME_STATE -->|暂停| PAUSE[⏸️ 暂停界面]
+    GAME_STATE -->|游戏结束| GAME_OVER[💀 游戏结束]
+    
+    %% 暂停流程
+    PAUSE --> PAUSE_INPUT{🎮 暂停输入}
+    PAUSE_INPUT -->|继续| GAME_LOOP
+    PAUSE_INPUT -->|返回菜单| MENU
+    
+    %% 游戏结束流程
+    GAME_OVER --> GAME_OVER_INPUT{🎮 结束输入}
+    GAME_OVER_INPUT -->|重新开始| GAME_INIT
+    GAME_OVER_INPUT -->|返回菜单| MENU
+    
+    %% 帮助页面流程
+    HELP --> HELP_INPUT{📖 帮助输入}
+    HELP_INPUT -->|返回| MENU
+    
+    %% 音频设置流程
+    AUDIO_SETTINGS --> AUDIO_INPUT{🔊 音频输入}
+    AUDIO_INPUT -->|调整设置| AUDIO_SETTINGS
+    AUDIO_INPUT -->|返回| MENU
+    
+    %% 样式定义
+    classDef startEnd fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef decision fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef gameLoop fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef interface fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    
+    class START,EXIT startEnd
+    class INIT,AUDIO_INIT,GAME_INIT,INPUT,UPDATE,PHYSICS,COLLISION,RENDER process
+    class MENU_INPUT,GAME_STATE,PAUSE_INPUT,GAME_OVER_INPUT,HELP_INPUT,AUDIO_INPUT decision
+    class GAME_LOOP gameLoop
+    class MENU,HELP,AUDIO_SETTINGS,PAUSE,GAME_OVER interface

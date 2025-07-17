@@ -23,7 +23,7 @@ Player::Player(float x, float y)
     health(3), maxHealth(3), invulnerabilityTimer(0.0f), coins(0),
     timeScaleFactor(1.0f), magnetRadius(0.0f), hasDoubleJump(false), obstaclesFrozen(false),
     comboCount(0), comboTimer(0.0f), lastLandingTime(0.0f),
-    lastPlatformY(0.0f), hasValidLastPlatform(false), currentPlatformY(0.0f),  // 新增初始化
+    lastPlatformY(0.0f), hasValidLastPlatform(false), currentPlatformY(0.0f), 
     shakeIntensity(0.0f), shakeTimer(0.0f),
     bonusScore(0), itemsCollected(0) {
 }
@@ -46,7 +46,7 @@ void Player::update(float deltaTime) {
         }
     }
 
-    // 新增：更新新道具效果
+    // 更新新道具效果
     if (doubleJumpTimer > 0) {
         doubleJumpTimer -= deltaTime;
         if (doubleJumpTimer <= 0) {
@@ -80,7 +80,7 @@ void Player::update(float deltaTime) {
         invulnerabilityTimer -= deltaTime;
     }
 
-    // 新增：更新无敌计时器
+    // 更新无敌计时器
     if (invincibilityTimer > 0) {
         invincibilityTimer -= deltaTime;
         if (invincibilityTimer <= 0) {
@@ -263,7 +263,7 @@ void Player::resetComboSystem() {
 void Player::applySpeedBoost() {
     speedBoostTimer = 5.0f;
 
-    // 新增：播放道具收集音效
+    // 播放道具收集音效
     AudioManager::getInstance().playSound(SoundType::ITEM_COLLECT, false);
 
     createSpeedBoostEffect();
@@ -287,7 +287,7 @@ void Player::applyInvincibility() {
     invincibilityTimer = 8.0f;
     hasInvincibility = true;
 
-    // 新增：播放无敌音效
+    // 播放无敌音效
     AudioManager::getInstance().playSound(SoundType::INVINCIBILITY, false);
 
     addBonusScore(150);
@@ -295,7 +295,7 @@ void Player::applyInvincibility() {
     createInvincibilityEffect();
 }
 
-// 新增：添加奖励分数
+// 添加奖励分数
 void Player::addBonusScore(int points) {
     bonusScore += points;
 
@@ -306,7 +306,7 @@ void Player::addBonusScore(int points) {
     }
 }
 
-// 新增：消耗护盾（用于复活）
+// 消耗护盾（用于复活）
 void Player::consumeShield() {
     hasShieldActive = false;
     shieldTimer = 0.0f;
@@ -339,7 +339,7 @@ void Player::createJumpParticles() {
     }
 }
 
-// 新增：无敌激活特效
+// 无敌激活特效
 void Player::createInvincibilityEffect() {
     for (int i = 0; i < 30; i++) {
         float angle = (float)i / 30.0f * 6.28f;
@@ -371,7 +371,7 @@ void Player::createLandingParticles() {
     }
 }
 
-// 新增：二段跳粒子效果
+// 二段跳粒子效果
 void Player::createDoubleJumpParticles() {
     for (int i = 0; i < 12; i++) {
         float angle = (float)i / 12.0f * 6.28f;
@@ -388,7 +388,7 @@ void Player::createDoubleJumpParticles() {
     }
 }
 
-// 新增：速度粒子效果
+// 速度粒子效果
 void Player::createSpeedParticles() {
     for (int i = 0; i < 3; i++) {
         float px = x + rand() % (int)width;
@@ -407,7 +407,7 @@ void Player::createSpeedParticles() {
     }
 }
 
-// 新增：速度提升激活特效
+// 速度提升激活特效
 void Player::createSpeedBoostEffect() {
     for (int i = 0; i < 16; i++) {
         float angle = (float)i / 16.0f * 6.28f;
@@ -424,7 +424,7 @@ void Player::createSpeedBoostEffect() {
     }
 }
 
-// 新增：护盾激活特效
+// 护盾激活特效
 void Player::createShieldActivateEffect() {
     for (int i = 0; i < 20; i++) {
         float angle = (float)i / 20.0f * 6.28f;
@@ -441,7 +441,7 @@ void Player::createShieldActivateEffect() {
     }
 }
 
-// 新增：连击特效
+// 连击特效
 void Player::createComboEffect() {
     COLORREF comboColor = DrawUtils::getComboColor(comboCount);
 
@@ -540,7 +540,7 @@ void Player::drawWithOffset(float offsetX, float offsetY) {
             (int)(20 + 5 * shieldPulse), Theme::SHIELD_GLOW, 0.4f);
     }
 
-    // 新增：无敌效果绘制
+    // 无敌效果绘制
     if (hasInvincibilityActive()) {
         // 绘制无敌光环
         float invincibilityPulse = AnimationUtils::pulse(pulseTimer, 4.0f);
@@ -576,7 +576,7 @@ void Player::drawWithOffset(float offsetX, float offsetY) {
         glowColor = Theme::SHIELD_GLOW;
         glowIntensity = 0.5f;
     }
-    // 新增：无敌状态光晕
+    // 无敌状态光晕
     if (hasInvincibilityActive()) {
         glowColor = RGB(255, 215, 0);  // 金色光晕
         glowIntensity = 0.8f;
@@ -607,7 +607,7 @@ void Player::drawWithOffset(float offsetX, float offsetY) {
         playerColor = AnimationUtils::colorPulse(Theme::PLAYER_MAIN,
             Theme::PLAYER_SHIELD_EFFECT, pulseTimer, 3.0f);
     }
-    // 新增：无敌状态颜色
+    // 无敌状态颜色
     if (hasInvincibilityActive()) {
         playerColor = AnimationUtils::colorPulse(Theme::PLAYER_MAIN,
             RGB(255, 215, 0), pulseTimer, 5.0f);
@@ -768,7 +768,7 @@ void Player::takeDamage(int damage) {
     health -= damage;
     if (health < 0) health = 0;
 
-    // 新增：播放受伤音效
+    // 播放受伤音效
     AudioManager::getInstance().playSound(SoundType::DAMAGE_SOUND, false);
 
     // 设置无敌时间

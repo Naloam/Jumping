@@ -25,7 +25,7 @@ enum ItemType {
     INVINCIBILITY    // 无敌道具
 };
 
-// 新增：障碍物类型
+// 障碍物类型
 enum ObstacleType {
     SPIKE,              // 尖刺
     FIREBALL,           // 火球（从天而降）
@@ -35,7 +35,7 @@ enum ObstacleType {
     MOVING_WALL         // 移动墙壁
 };
 
-// 新增：障碍物类
+// 障碍物类
 class Obstacle {
 private:
     float x, y;
@@ -79,7 +79,7 @@ public:
     bool shouldRemove() const;
 };
 
-// 新增：金币类
+// 金币类
 class Coin {
 private:
     float x, y;

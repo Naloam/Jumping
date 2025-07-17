@@ -129,7 +129,6 @@ namespace Theme {
     const COLORREF DANGER_ZONE = RGB(255, 100, 100);     // 危险区域
     const COLORREF WARNING_FLASH = RGB(255, 200, 200);   // 警告闪烁
 
-    // 新增的UI透明度支持
     const COLORREF UI_TRANSPARENT_BG = RGB(240, 245, 250);   // 半透明UI背景
 
     // 增强的视觉效果颜色

@@ -40,17 +40,17 @@ private:
     float magneticFieldTimer;       // 磁场效果时间
     float freezeObstaclesTimer;     // 冻结障碍物时间
 
-    // 新增：无敌道具效果
+    // 无敌道具效果
     float invincibilityTimer;      // 无敌时间
     bool hasInvincibility;         // 是否有无敌效果
 
-    // 新增：玩家状态
+    // 玩家状态
     int health;                     // 生命值
     int maxHealth;                  // 最大生命值
     float invulnerabilityTimer;     // 无敌时间
     int coins;                      // 金币数量
 
-    // 新增：道具效果强度
+    // 道具效果强度
     float timeScaleFactor;          // 时间缩放因子
     float magnetRadius;             // 磁场半径
     bool hasDoubleJump;             // 是否有额外跳跃
@@ -126,21 +126,21 @@ public:
     void applyInvincibility();
     bool hasInvincibilityActive() const { return invincibilityTimer > 0; }
 
-    // 新增：状态检查方法
+    // 状态检查方法
     bool hasDoubleJumpActive() const { return doubleJumpTimer > 0; }
     bool hasSlowTimeActive() const { return slowTimeTimer > 0; }
     bool hasMagneticFieldActive() const { return magneticFieldTimer > 0; }
     bool hasObstaclesFrozen() const { return obstaclesFrozen; }
     bool isInvulnerable() const { return invulnerabilityTimer > 0; }
 
-    // 新增：访问器
+    // 访问器
     int getHealth() const { return health; }
     int getMaxHealth() const { return maxHealth; }
     int getCoins() const { return coins; }
     float getTimeScaleFactor() const { return timeScaleFactor; }
     float getMagnetRadius() const { return magnetRadius; }
 
-    // 新增：伤害系统
+    // 伤害系统
     void takeDamage(int damage);
     void heal(int amount);
 
@@ -152,7 +152,7 @@ public:
     bool shouldIncrementCombo(float newPlatformY);
     void resetComboSystem();
 
-    // 新增：分数系统
+    // 分数系统
     void addBonusScore(int points);
     int getBonusScore() const { return bonusScore; }
     int getItemsCollected() const { return itemsCollected; }
@@ -161,12 +161,12 @@ public:
     // 粒子效果
     void createJumpParticles();
     void createLandingParticles();
-    void createDoubleJumpParticles();        // 新增
-    void createSpeedParticles();             // 新增
-    void createSpeedBoostEffect();           // 新增
-    void createShieldActivateEffect();       // 新增
-    void createComboEffect();                // 新增
-    void createInvincibilityEffect();        // 新增：无敌激活特效
+    void createDoubleJumpParticles();        
+    void createSpeedParticles();            
+    void createSpeedBoostEffect();          
+    void createShieldActivateEffect();       
+    void createComboEffect();               
+    void createInvincibilityEffect();       
     void createRespawnEffect() { createShieldActivateEffect(); }
     void updateParticles(float deltaTime);
     void drawParticles(float offsetX, float offsetY);
